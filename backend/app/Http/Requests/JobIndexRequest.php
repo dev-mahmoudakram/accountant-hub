@@ -15,7 +15,7 @@ class JobIndexRequest extends FormRequest
     {
         return [
             'search' => ['nullable', 'string', 'max:100'],
-            'category' => ['nullable', 'string', 'max:140'],
+            'category' => ['nullable', 'string', 'max:500'],
             'budget_min' => ['nullable', 'numeric', 'min:0'],
             'budget_max' => ['nullable', 'numeric', 'min:0'],
             'sort' => ['nullable', 'string', 'in:newest,highest_budget'],

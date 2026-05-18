@@ -18,8 +18,9 @@ class JobQuery
             $query->where('title', 'like', '%'.$search.'%');
         }
 
-        if ($categorySlug = $request->validated('category')) {
-            $query->whereHas('category', fn ($q) => $q->where('slug', $categorySlug));
+        if ($categorySlugs = $request->validated('category')) {
+            $slugs = array_filter(array_map('trim', explode(',', $categorySlugs)));
+            $query->whereHas('category', fn ($q) => $q->whereIn('slug', $slugs));
         }
 
         if ($budgetMin = $request->validated('budget_min')) {
