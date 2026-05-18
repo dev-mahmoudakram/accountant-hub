@@ -24,8 +24,8 @@ class JobDetailResource extends JsonResource
             'status' => $this->status->value,
             'bids_count' => $this->bids_count ?? 0,
             'user_has_bid' => $this->when(
-                $request->user() !== null,
-                fn () => $this->bids->contains('user_id', $request->user()?->id)
+                auth('sanctum')->check(),
+                fn () => $this->bids->contains('user_id', auth('sanctum')->id())
             ),
             'category' => new JobCategoryResource($this->whenLoaded('category')),
             'created_at' => $this->created_at->toISOString(),
