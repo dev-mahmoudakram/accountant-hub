@@ -4,6 +4,7 @@ namespace App\Queries;
 
 use App\Http\Requests\JobIndexRequest;
 use App\Models\Job;
+use App\Models\JobCategory;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class JobQuery
@@ -20,7 +21,8 @@ class JobQuery
 
         if ($categorySlugs = $request->validated('category')) {
             $slugs = array_filter(array_map('trim', explode(',', $categorySlugs)));
-            $query->whereHas('category', fn ($q) => $q->whereIn('slug', $slugs));
+            $categoryIds = JobCategory::whereIn('slug', $slugs)->pluck('id');
+            $query->whereIn('category_id', $categoryIds);
         }
 
         if ($budgetMin = $request->validated('budget_min')) {
