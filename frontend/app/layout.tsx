@@ -4,8 +4,8 @@ import { Toaster } from 'sonner';
 import NextTopLoader from 'nextjs-toploader';
 import './globals.css';
 import { AuthProvider } from '@/components/auth/AuthProvider';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
+import ConditionalShell from '@/components/layout/ConditionalShell';
+import ScrollToTop from '@/components/layout/ScrollToTop';
 
 const geist = Geist({
   variable: '--font-geist-sans',
@@ -27,9 +27,8 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-white text-ink">
         <AuthProvider>
           <NextTopLoader color="#019a51" showSpinner={false} height={3} />
-          <Navbar />
-          <main className="flex-1 flex flex-col">{children}</main>
-          <Footer />
+          <ScrollToTop />
+          <ConditionalShell>{children}</ConditionalShell>
           <Toaster richColors position="top-right" />
         </AuthProvider>
       </body>

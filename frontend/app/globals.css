@@ -17,8 +17,53 @@
   --foreground: #0a0a0a;
 }
 
+/* Hero radial glow — avoids inline style linting warning */
+.hero-glow {
+  background: radial-gradient(
+    ellipse 70% 55% at 50% 110%,
+    rgba(1, 154, 81, 0.15) 0%,
+    transparent 65%
+  );
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Focus ring improvement */
+:focus-visible {
+  outline: 2px solid #019a51;
+  outline-offset: 2px;
+}
+
+/* Remove focus outline from all header/navbar items */
+header :focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
+}
+
+/* Selection color */
+::selection {
+  background: #e6f7ef;
+  color: #017a41;
 }

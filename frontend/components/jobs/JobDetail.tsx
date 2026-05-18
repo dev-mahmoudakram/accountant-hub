@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import Container from '@/components/layout/Container';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -12,6 +13,7 @@ import { api } from '@/lib/api';
 import { formatBudget, formatDate, formatRelative } from '@/lib/formatters';
 import { JobDetail } from '@/types/job';
 import { ApiResponse } from '@/types/api';
+import { fadeUp, staggerContainer } from '@/lib/animations';
 
 interface JobDetailProps {
   jobId: number;
@@ -19,21 +21,34 @@ interface JobDetailProps {
 
 function DetailSkeleton() {
   return (
-    <div className="py-10">
+    <div className="py-10 lg:py-12">
       <Container>
         <div className="max-w-5xl mx-auto">
+          <Skeleton className="h-4 w-48 mb-6" />
           <Skeleton className="h-9 w-2/3 mb-3" />
-          <Skeleton className="h-5 w-48 mb-8" />
+          <Skeleton className="h-5 w-64 mb-10" />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-3">
-              {Array.from({ length: 6 }).map((_, i) => (
+              {Array.from({ length: 8 }).map((_, i) => (
                 <Skeleton key={i} className={`h-4 ${i % 3 === 2 ? 'w-3/4' : 'w-full'}`} />
               ))}
             </div>
-            <Skeleton className="h-56 rounded-xl" />
+            <div className="space-y-3">
+              <Skeleton className="h-52 rounded-2xl" />
+              <Skeleton className="h-36 rounded-2xl" />
+            </div>
           </div>
         </div>
       </Container>
+    </div>
+  );
+}
+
+function MetaRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between py-3 border-b border-border last:border-0">
+      <span className="text-xs font-medium text-muted">{label}</span>
+      <span className="text-sm font-semibold text-ink text-right">{value}</span>
     </div>
   );
 }
@@ -63,132 +78,218 @@ export default function JobDetailContent({ jobId }: JobDetailProps) {
   if (job === null || isPending) return <DetailSkeleton />;
 
   return (
-    <div className="py-10">
+    <div className="py-10 lg:py-12">
       <Container>
         <div className="max-w-5xl mx-auto">
 
-          {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-start gap-4 mb-3">
-              <h1 className="text-2xl sm:text-3xl font-bold text-ink leading-tight flex-1">
-                {job.title}
-              </h1>
-              <Badge variant={job.status} className="shrink-0 mt-1 text-sm px-3 py-1">
-                {job.status === 'open' ? 'Open' : 'Closed'}
-              </Badge>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
-              <span className="font-medium text-ink">{job.company_name}</span>
-              <span>·</span>
-              <span>{job.category?.name}</span>
-              <span>·</span>
-              <span>Posted {formatRelative(job.created_at)}</span>
-            </div>
-          </div>
+          {/* Breadcrumb */}
+          <nav className="flex items-center gap-2 text-xs text-muted mb-6">
+            <Link href="/jobs" className="hover:text-brand transition-colors">
+              Browse Jobs
+            </Link>
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            <span className="text-ink font-medium truncate max-w-48">{job.title}</span>
+          </nav>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-            {/* Main content */}
-            <div className="lg:col-span-2 space-y-8">
-              <section>
-                <h2 className="text-base font-semibold text-ink mb-3">Job Description</h2>
-                <p className="text-sm text-muted leading-relaxed whitespace-pre-wrap">{job.description}</p>
-              </section>
-
-              {job.required_skills.length > 0 && (
-                <section>
-                  <h2 className="text-base font-semibold text-ink mb-3">Required Skills</h2>
-                  <div className="flex flex-wrap gap-2">
-                    {job.required_skills.map((skill) => (
-                      <span key={skill} className="text-xs font-medium px-3 py-1 rounded-full bg-brand-light text-brand">
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {job.attachments.length > 0 && (
-                <section>
-                  <h2 className="text-base font-semibold text-ink mb-3">Attachments</h2>
-                  <ul className="space-y-2">
-                    {job.attachments.map((file, i) => (
-                      <li key={i} className="flex items-center gap-2 text-sm text-brand hover:underline cursor-pointer">
-                        <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                            d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                        </svg>
-                        {file}
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              )}
-            </div>
-
-            {/* Sidebar */}
-            <div className="space-y-5">
-
-              {/* Job meta */}
-              <div className="bg-white border border-border rounded-xl p-5 space-y-3">
-                <div className="flex items-center justify-between py-1 border-b border-border">
-                  <span className="text-xs text-muted">Budget</span>
-                  <span className="text-sm font-bold text-brand">{formatBudget(job.budget_min, job.budget_max)}</span>
-                </div>
-                <div className="flex items-center justify-between py-1 border-b border-border">
-                  <span className="text-xs text-muted">Deadline</span>
-                  <span className="text-xs font-medium text-ink">{formatDate(job.deadline)}</span>
-                </div>
-                <div className="flex items-center justify-between py-1 border-b border-border">
-                  <span className="text-xs text-muted">Delivery time</span>
-                  <span className="text-xs font-medium text-ink">{job.expected_delivery_time}</span>
-                </div>
-                <div className="flex items-center justify-between py-1">
-                  <span className="text-xs text-muted">Bids received</span>
-                  <span className="text-xs font-medium text-ink">{job.bids_count}</span>
-                </div>
+          <motion.div
+            variants={staggerContainer}
+            initial="hidden"
+            animate="visible"
+          >
+            {/* Job Header */}
+            <motion.div variants={fadeUp} className="mb-8">
+              <div className="flex items-start gap-4 mb-3 flex-wrap">
+                <h1 className="text-2xl sm:text-3xl font-bold text-ink leading-tight flex-1 min-w-0">
+                  {job.title}
+                </h1>
+                <Badge variant={job.status} dot className="shrink-0 mt-1 text-sm px-3 py-1">
+                  {job.status === 'open' ? 'Open' : 'Closed'}
+                </Badge>
               </div>
+              <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
+                <span className="flex items-center gap-1.5">
+                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  <span className="font-medium text-ink">{job.company_name}</span>
+                </span>
+                <span className="text-border">·</span>
+                <span>{job.category?.name}</span>
+                <span className="text-border">·</span>
+                <span>Posted {formatRelative(job.created_at)}</span>
+              </div>
+            </motion.div>
 
-              {/* Bid CTA */}
-              {job.status === 'closed' ? (
-                <div className="bg-surface border border-border rounded-xl p-5 text-center">
-                  <p className="text-sm font-semibold text-muted">This job is closed</p>
-                  <p className="text-xs text-muted mt-1">No longer accepting bids</p>
-                </div>
-              ) : !isAuthenticated ? (
-                <div className="bg-brand-light border border-brand rounded-xl p-5 text-center space-y-3">
-                  <p className="text-sm font-semibold text-ink">Want to bid on this job?</p>
-                  <Link href={`/login?redirect=/jobs/${jobId}`}>
-                    <Button variant="primary" size="md" className="w-full">
-                      Login to Submit a Bid
-                    </Button>
-                  </Link>
-                  <p className="text-xs text-muted">
-                    No account?{' '}
-                    <Link href="/register" className="text-brand hover:underline font-medium">
-                      Register free
-                    </Link>
-                  </p>
-                </div>
-              ) : hasApplied ? (
-                <div className="bg-brand-light border border-brand rounded-xl p-5 text-center">
-                  <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center mx-auto mb-3">
-                    <svg className="w-5 h-5 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+              {/* Main content */}
+              <motion.div variants={fadeUp} className="lg:col-span-2 space-y-8">
+
+                <section className="bg-white border border-border rounded-2xl p-6">
+                  <h2 className="text-sm font-semibold text-ink mb-4 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                  </div>
-                  <p className="text-sm font-semibold text-brand">Bid Submitted</p>
-                  <p className="text-xs text-muted mt-1">You've already applied for this job</p>
-                </div>
-              ) : (
-                <div className="bg-white border border-border rounded-xl p-5">
-                  <h2 className="text-base font-semibold text-ink mb-4">Submit Your Bid</h2>
-                  <BidForm jobId={jobId} onSuccess={() => setHasApplied(true)} />
-                </div>
-              )}
+                    Job Description
+                  </h2>
+                  <p className="text-sm text-muted leading-relaxed whitespace-pre-wrap">
+                    {job.description}
+                  </p>
+                </section>
 
+                {job.required_skills.length > 0 && (
+                  <section className="bg-white border border-border rounded-2xl p-6">
+                    <h2 className="text-sm font-semibold text-ink mb-4 flex items-center gap-2">
+                      <svg className="w-4 h-4 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                          d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                      </svg>
+                      Required Skills
+                    </h2>
+                    <div className="flex flex-wrap gap-2">
+                      {job.required_skills.map((skill) => (
+                        <span
+                          key={skill}
+                          className="text-xs font-medium px-3 py-1.5 rounded-lg bg-brand-light text-brand border border-brand/20"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {job.attachments.length > 0 && (
+                  <section className="bg-white border border-border rounded-2xl p-6">
+                    <h2 className="text-sm font-semibold text-ink mb-4 flex items-center gap-2">
+                      <svg className="w-4 h-4 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                          d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                      </svg>
+                      Attachments
+                    </h2>
+                    <ul className="space-y-2">
+                      {job.attachments.map((file, i) => (
+                        <li
+                          key={i}
+                          className="flex items-center gap-2 text-sm text-brand hover:underline cursor-pointer py-1"
+                        >
+                          <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                              d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                          </svg>
+                          {file}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+              </motion.div>
+
+              {/* Sidebar */}
+              <motion.div variants={fadeUp} className="space-y-4">
+
+                {/* Job meta card */}
+                <div className="bg-white border border-border rounded-2xl p-5 shadow-sm">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted mb-3">
+                    Job Details
+                  </p>
+                  <MetaRow
+                    label="Budget"
+                    value={
+                      <span className="text-brand">
+                        {formatBudget(job.budget_min, job.budget_max)}
+                      </span>
+                    }
+                  />
+                  <MetaRow label="Deadline" value={formatDate(job.deadline)} />
+                  <MetaRow label="Delivery time" value={job.expected_delivery_time} />
+                  <MetaRow
+                    label="Bids received"
+                    value={
+                      <span className="flex items-center gap-1">
+                        <svg className="w-3.5 h-3.5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        {job.bids_count}
+                      </span>
+                    }
+                  />
+                </div>
+
+                {/* Bid action area */}
+                {job.status === 'closed' ? (
+                  <div className="bg-surface border border-border rounded-2xl p-5 text-center">
+                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                      <svg className="w-5 h-5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-semibold text-ink">Job Closed</p>
+                    <p className="text-xs text-muted mt-1">No longer accepting bids</p>
+                  </div>
+                ) : !isAuthenticated ? (
+                  <div className="bg-white border border-brand/30 rounded-2xl p-5 text-center space-y-3 shadow-sm">
+                    <div className="w-10 h-10 rounded-full bg-brand-light flex items-center justify-center mx-auto">
+                      <svg className="w-5 h-5 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-ink">Want to bid on this job?</p>
+                      <p className="text-xs text-muted mt-0.5">Sign in to submit your proposal</p>
+                    </div>
+                    <Link href={`/login?redirect=/jobs/${jobId}`}>
+                      <Button variant="primary" size="md" className="w-full">
+                        Login to Submit a Bid
+                      </Button>
+                    </Link>
+                    <p className="text-xs text-muted">
+                      No account?{' '}
+                      <Link href="/register" className="text-brand hover:underline font-medium">
+                        Register free
+                      </Link>
+                    </p>
+                  </div>
+                ) : hasApplied ? (
+                  <div className="bg-brand-light border border-brand/30 rounded-2xl p-5 text-center shadow-sm">
+                    <div className="w-10 h-10 rounded-full bg-white border border-brand/20 flex items-center justify-center mx-auto mb-3 shadow-sm">
+                      <svg className="w-5 h-5 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}
+                          d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-semibold text-brand">Bid Submitted!</p>
+                    <p className="text-xs text-muted mt-1">You&apos;ve already applied for this job</p>
+                    <Link href="/dashboard" className="mt-3 block">
+                      <Button variant="outline" size="sm" className="w-full">
+                        View My Bids
+                      </Button>
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="bg-white border border-border rounded-2xl p-5 shadow-sm">
+                    <h2 className="text-sm font-semibold text-ink mb-4 flex items-center gap-2">
+                      <svg className="w-4 h-4 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      </svg>
+                      Submit Your Bid
+                    </h2>
+                    <BidForm jobId={jobId} onSuccess={() => setHasApplied(true)} />
+                  </div>
+                )}
+
+              </motion.div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </Container>
     </div>
