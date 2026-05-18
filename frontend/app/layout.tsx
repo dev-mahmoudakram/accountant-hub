@@ -28,7 +28,7 @@ export default function RootLayout({
         <AuthProvider>
           <NextTopLoader color="#019a51" showSpinner={false} height={3} />
           <Navbar />
-          <main className="flex-1">{children}</main>
+          <main className="flex-1 flex flex-col">{children}</main>
           <Footer />
           <Toaster richColors position="top-right" />
         </AuthProvider>

@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { clearAuth, getToken, getUser, setAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { User } from '@/types/user';
@@ -10,6 +11,7 @@ interface AuthContextValue {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
+  isReady: boolean;
   login: (token: string, user: User) => void;
   logout: () => Promise<void>;
 }
@@ -17,12 +19,15 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     setToken(getToken());
     setUser(getUser());
+    setIsReady(true);
   }, []);
 
   const login = useCallback((newToken: string, newUser: User) => {
@@ -40,11 +45,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearAuth();
       setToken(null);
       setUser(null);
+      router.push('/login');
     }
-  }, []);
+  }, [router]);
 
   return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated: !!token, login, logout }}>
+    <AuthContext.Provider value={{ user, token, isAuthenticated: !!token, isReady, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

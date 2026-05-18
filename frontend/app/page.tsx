@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Container from '@/components/layout/Container';
+import { CtaGuestButton, HeroGuestButton } from '@/components/home/GuestButtons';
 
 export default function HomePage() {
   return (
@@ -22,12 +23,7 @@ export default function HomePage() {
               >
                 Browse Jobs
               </Link>
-              <Link
-                href="/register"
-                className="inline-flex items-center justify-center rounded-lg font-semibold px-6 py-3 text-base border-2 border-white/60 text-white hover:bg-white/10 transition-colors"
-              >
-                Create Account
-              </Link>
+              <HeroGuestButton />
             </div>
           </div>
         </Container>
@@ -124,12 +120,7 @@ export default function HomePage() {
               Join hundreds of accounting professionals on Accountant Hub and start bidding today.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-3">
-              <Link
-                href="/register"
-                className="inline-flex items-center justify-center rounded-lg font-semibold px-6 py-3 text-base bg-brand text-white hover:bg-brand-dark transition-colors"
-              >
-                Get Started Free
-              </Link>
+              <CtaGuestButton />
               <Link
                 href="/jobs"
                 className="inline-flex items-center justify-center rounded-lg font-semibold px-6 py-3 text-base border border-brand text-brand hover:bg-brand-light transition-colors"
