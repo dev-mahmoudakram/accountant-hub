@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -26,19 +26,23 @@ export default function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login, isAuthenticated, isReady } = useAuth();
-
-  useEffect(() => {
-    if (isReady && isAuthenticated) router.replace('/jobs');
-  }, [isReady, isAuthenticated, router]);
-
-  if (!isReady || isAuthenticated) return null;
   const [serverError, setServerError] = useState<string | null>(null);
+  const prevIsReadyRef = useRef(false);
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
+
+  useEffect(() => {
+    if (!prevIsReadyRef.current && isReady && isAuthenticated) {
+      router.replace('/jobs');
+    }
+    prevIsReadyRef.current = isReady;
+  }, [isReady, isAuthenticated, router]);
+
+  if (!isReady || isAuthenticated) return null;
 
   async function onSubmit(data: FormValues) {
     setServerError(null);

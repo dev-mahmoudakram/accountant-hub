@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useEffect, useRef, useState } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
@@ -33,23 +33,27 @@ type FormValues = z.infer<typeof schema>;
 export default function RegisterContent() {
   const router = useRouter();
   const { login, isAuthenticated, isReady } = useAuth();
-
-  useEffect(() => {
-    if (isReady && isAuthenticated) router.replace('/jobs');
-  }, [isReady, isAuthenticated, router]);
-
-  if (!isReady || isAuthenticated) return null;
   const [serverError, setServerError] = useState<string | null>(null);
+  const prevIsReadyRef = useRef(false);
 
   const {
     register,
     handleSubmit,
     setError,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
-  const passwordValue = watch('password', '');
+  const passwordValue = useWatch({ control, name: 'password', defaultValue: '' });
+
+  useEffect(() => {
+    if (!prevIsReadyRef.current && isReady && isAuthenticated) {
+      router.replace('/jobs');
+    }
+    prevIsReadyRef.current = isReady;
+  }, [isReady, isAuthenticated, router]);
+
+  if (!isReady || isAuthenticated) return null;
 
   async function onSubmit(data: FormValues) {
     setServerError(null);
