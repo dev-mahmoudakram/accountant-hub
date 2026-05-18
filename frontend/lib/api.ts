@@ -1,5 +1,3 @@
-import { clearAuth } from '@/lib/auth';
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
 
 function getToken(): string | null {
@@ -36,8 +34,7 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
 
   if (!res.ok) {
     if (res.status === 401 && typeof window !== 'undefined') {
-      clearAuth();
-      window.location.href = '/login';
+      window.dispatchEvent(new Event('auth:unauthorized'));
     }
     const error = await res.json().catch(() => ({ message: 'Request failed' }));
     throw { status: res.status, ...error };

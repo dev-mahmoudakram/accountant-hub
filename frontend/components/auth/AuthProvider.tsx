@@ -30,6 +30,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsReady(true);
   }, []);
 
+  useEffect(() => {
+    function handleUnauthorized() {
+      clearAuth();
+      setToken(null);
+      setUser(null);
+      router.push('/login');
+    }
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
+  }, [router]);
+
   const login = useCallback((newToken: string, newUser: User) => {
     setAuth(newToken, newUser);
     setToken(newToken);
