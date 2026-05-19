@@ -72,7 +72,7 @@ export default function ClientJobDetailPage() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-2">
               <h1 className="text-2xl font-bold text-ink leading-tight">{job.title}</h1>
-              <Badge variant={isOpen ? 'success' : 'default'}>
+              <Badge variant={isOpen ? 'open' : 'closed'}>
                 {isOpen ? 'Open' : 'Closed'}
               </Badge>
             </div>
