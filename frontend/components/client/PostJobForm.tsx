@@ -14,6 +14,7 @@ import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
+import AttachmentDropzone from '@/components/client/AttachmentDropzone';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -102,6 +103,7 @@ export default function PostJobForm({ initialData, jobId }: Props) {
   const [categories, setCategories] = useState<JobCategory[]>([]);
   const [serverError, setServerError] = useState<string | null>(null);
   const [skillInput, setSkillInput] = useState('');
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 
   const isEdit = !!initialData;
 
@@ -165,8 +167,14 @@ export default function PostJobForm({ initialData, jobId }: Props) {
         router.push(`/client/jobs/${jobId}`);
       } else {
         const res = await api.post<ApiResponse<JobDetail>>('/client/jobs', payload);
+        const newJobId = res.data.id;
+        for (const file of pendingFiles) {
+          const form = new FormData();
+          form.append('file', file);
+          await api.postForm(`/client/jobs/${newJobId}/attachments`, form);
+        }
         toast.success('Job posted successfully!');
-        router.push(`/client/jobs/${res.data.id}`);
+        router.push(`/client/jobs/${newJobId}`);
       }
     } catch (err: unknown) {
       const error = err as { status?: number; message?: string; errors?: Record<string, string[]> };
@@ -360,6 +368,17 @@ export default function PostJobForm({ initialData, jobId }: Props) {
           </p>
         )}
         <p className="text-xs text-muted">Press Enter or comma to add · click × to remove</p>
+      </div>
+
+      {/* ── Attachments ──────────────────────────────────────────────────── */}
+      <div className="bg-white border border-border rounded-2xl p-6 space-y-4">
+        <h2 className="text-base font-semibold text-ink">Attachments</h2>
+        {isEdit && <p className="text-xs text-muted">Files are saved immediately when uploaded or removed.</p>}
+        <AttachmentDropzone
+          jobId={isEdit ? jobId : undefined}
+          initialAttachments={initialData?.attachments ?? []}
+          onPendingChange={!isEdit ? setPendingFiles : undefined}
+        />
       </div>
 
       <div className="flex items-center gap-3">

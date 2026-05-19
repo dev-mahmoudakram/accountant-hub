@@ -20,7 +20,11 @@ class JobDetailResource extends JsonResource
             'deadline' => $this->deadline?->toDateString(),
             'expected_delivery_time' => $this->expected_delivery_time,
             'required_skills' => $this->required_skills ?? [],
-            'attachments' => $this->attachments ?? [],
+            'attachments' => collect($this->attachments ?? [])->map(fn (string $path) => [
+                'path' => $path,
+                'name' => basename($path),
+                'url'  => asset('storage/' . $path),
+            ])->values()->all(),
             'status' => $this->status->value,
             'bids_count' => $this->bids_count ?? 0,
             'user_has_bid' => $this->when(

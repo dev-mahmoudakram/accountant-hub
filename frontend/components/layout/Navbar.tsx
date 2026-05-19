@@ -13,13 +13,16 @@ function NavLink({
   href,
   children,
   onClick,
+  excludePaths,
 }: {
   href: string;
   children: React.ReactNode;
   onClick?: () => void;
+  excludePaths?: string[];
 }) {
   const pathname = usePathname();
-  const active = pathname === href || (href !== '/' && pathname.startsWith(href));
+  const excluded = excludePaths?.some((p) => pathname === p || pathname.startsWith(p + '/')) ?? false;
+  const active = !excluded && (pathname === href || (href !== '/' && pathname.startsWith(href + '/')));
   return (
     <Link
       href={href}
@@ -63,7 +66,7 @@ function PlusIcon() {
 }
 
 export default function Navbar() {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isReady, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const isClient = user?.role === 'client';
@@ -97,7 +100,7 @@ export default function Navbar() {
               <NavLink href="/jobs">Browse Jobs</NavLink>
               {isAuthenticated && isClient && (
                 <>
-                  <NavLink href="/client/jobs">My Jobs</NavLink>
+                  <NavLink href="/client/jobs" excludePaths={['/client/jobs/new']}>My Jobs</NavLink>
                   <NavLink href="/client/jobs/new">Post a Job</NavLink>
                 </>
               )}
@@ -123,7 +126,7 @@ export default function Navbar() {
                     Sign Out
                   </Button>
                 </>
-              ) : (
+              ) : isReady ? (
                 <>
                   <Link href="/login" className="focus-visible:outline-none">
                     <Button variant="ghost" size="sm">Sign In</Button>
@@ -132,7 +135,7 @@ export default function Navbar() {
                     <Button variant="primary" size="sm">Get Started</Button>
                   </Link>
                 </>
-              )}
+              ) : null}
             </div>
 
             {/* Mobile Hamburger */}
@@ -258,7 +261,7 @@ export default function Navbar() {
                       Sign Out
                     </button>
                   </>
-                ) : (
+                ) : isReady ? (
                   <>
                     <Link href="/login" onClick={() => setMobileOpen(false)} className="block focus-visible:outline-none">
                       <button type="button" className="w-full px-4 py-3 rounded-xl border border-white/20 text-white text-sm font-semibold hover:bg-white/10 transition-colors focus-visible:outline-none">
@@ -271,7 +274,7 @@ export default function Navbar() {
                       </button>
                     </Link>
                   </>
-                )}
+                ) : null}
               </div>
             </motion.div>
           </>

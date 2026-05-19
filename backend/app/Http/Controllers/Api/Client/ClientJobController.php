@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api\Client;
 
 use App\Actions\Jobs\CreateJobAction;
+use App\Actions\Jobs\DeleteJobAttachmentAction;
 use App\Actions\Jobs\UpdateJobAction;
+use App\Actions\Jobs\UploadJobAttachmentAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateJobRequest;
 use App\Http\Requests\UpdateJobRequest;
@@ -76,5 +78,36 @@ class ClientJobController extends Controller
             'success' => true,
             'message' => 'Job deleted successfully.',
         ]);
+    }
+
+    public function storeAttachment(Request $request, Job $job, UploadJobAttachmentAction $action): JsonResponse
+    {
+        $this->authorize('manage', $job);
+
+        $request->validate([
+            'file' => ['required', 'file', 'max:10240', 'mimes:pdf,doc,docx,xls,xlsx,png,jpg,jpeg,zip'],
+        ]);
+
+        $path = $action->execute($job, $request->file('file'));
+
+        return response()->json([
+            'success' => true,
+            'attachment' => [
+                'path' => $path,
+                'name' => basename($path),
+                'url'  => asset('storage/' . $path),
+            ],
+        ], 201);
+    }
+
+    public function destroyAttachment(Request $request, Job $job, DeleteJobAttachmentAction $action): JsonResponse
+    {
+        $this->authorize('manage', $job);
+
+        $request->validate(['path' => 'required|string']);
+
+        $action->execute($job, $request->input('path'));
+
+        return response()->json(['success' => true]);
     }
 }

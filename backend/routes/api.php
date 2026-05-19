@@ -32,6 +32,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/jobs/{job}', [ClientJobController::class, 'destroy']);
         Route::get('/jobs/{job}/bids', [ClientBidController::class, 'index']);
         Route::patch('/jobs/{job}/bids/{bid}', [ClientBidController::class, 'update']);
+        Route::post('/jobs/{job}/attachments', [ClientJobController::class, 'storeAttachment']);
+        Route::delete('/jobs/{job}/attachments', [ClientJobController::class, 'destroyAttachment']);
     });
 });
 

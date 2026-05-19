@@ -23,8 +23,9 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
   }
 
   const token = getToken();
+  const isFormData = init.body instanceof FormData;
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     Accept: 'application/json',
     ...(init.headers as Record<string, string>),
   };
@@ -50,9 +51,12 @@ export const api = {
   post: <T>(endpoint: string, body?: unknown) =>
     request<T>(endpoint, { method: 'POST', body: JSON.stringify(body) }),
 
+  postForm: <T>(endpoint: string, form: FormData) =>
+    request<T>(endpoint, { method: 'POST', body: form }),
+
   patch: <T>(endpoint: string, body?: unknown) =>
     request<T>(endpoint, { method: 'PATCH', body: JSON.stringify(body) }),
 
-  delete: <T>(endpoint: string) =>
-    request<T>(endpoint, { method: 'DELETE' }),
+  delete: <T>(endpoint: string, body?: unknown) =>
+    request<T>(endpoint, { method: 'DELETE', ...(body !== undefined ? { body: JSON.stringify(body) } : {}) }),
 };

@@ -30,7 +30,7 @@ export interface JobListItem {
 export interface JobDetail extends JobListItem {
   description: string;
   required_skills: string[];
-  attachments: string[];
+  attachments: { path: string; url: string; name: string }[];
   user_has_bid?: boolean;
 }
 

@@ -455,6 +455,53 @@
               "path": ["client", "jobs", "1"]
             }
           }
+        },
+        {
+          "name": "Upload Attachment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "description": "Allowed: pdf, doc, docx, xls, xlsx, png, jpg, jpeg, zip. Max 10 MB."
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/client/jobs/1/attachments",
+              "host": ["{{base_url}}"],
+              "path": ["client", "jobs", "1", "attachments"]
+            },
+            "description": "Uploads a file and appends its path to the job's attachments array. Returns the attachment object with path, name, and url. Original filename is preserved."
+          }
+        },
+        {
+          "name": "Delete Attachment",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"path\": \"job-attachments/1/invoice.pdf\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/client/jobs/1/attachments",
+              "host": ["{{base_url}}"],
+              "path": ["client", "jobs", "1", "attachments"]
+            },
+            "description": "Deletes the file from storage and removes its path from the job's attachments array. Pass the exact `path` value returned by the upload endpoint."
+          }
         }
       ]
     },
