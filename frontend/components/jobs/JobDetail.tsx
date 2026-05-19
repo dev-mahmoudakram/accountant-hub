@@ -54,7 +54,7 @@ function MetaRow({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 export default function JobDetailContent({ jobId }: JobDetailProps) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [isPending, startTransition] = useTransition();
   const [job, setJob] = useState<JobDetail | null>(null);
   const [hasApplied, setHasApplied] = useState(false);
@@ -220,6 +220,19 @@ export default function JobDetailContent({ jobId }: JobDetailProps) {
                       </span>
                     }
                   />
+                  {job.poster && (
+                    <MetaRow
+                      label="Posted by"
+                      value={
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-5 h-5 rounded-full bg-brand-light border border-brand/20 flex items-center justify-center text-[10px] font-bold text-brand shrink-0">
+                            {job.poster.name.charAt(0).toUpperCase()}
+                          </span>
+                          {job.poster.name}
+                        </span>
+                      }
+                    />
+                  )}
                 </div>
 
                 {/* Bid action area */}
@@ -257,6 +270,22 @@ export default function JobDetailContent({ jobId }: JobDetailProps) {
                         Register free
                       </Link>
                     </p>
+                  </div>
+                ) : user?.role === 'client' ? (
+                  <div className="bg-surface border border-border rounded-2xl p-5 text-center">
+                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                      <svg className="w-5 h-5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                          d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-semibold text-ink">You&apos;re a Client</p>
+                    <p className="text-xs text-muted mt-1">Clients post jobs — accountants bid on them</p>
+                    <Link href="/client/jobs" className="mt-3 block">
+                      <Button variant="outline" size="sm" className="w-full">
+                        Go to My Jobs
+                      </Button>
+                    </Link>
                   </div>
                 ) : hasApplied ? (
                   <div className="bg-brand-light border border-brand/30 rounded-2xl p-5 text-center shadow-sm">

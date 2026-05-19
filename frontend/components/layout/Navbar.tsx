@@ -54,11 +54,21 @@ function ClipboardIcon() {
   );
 }
 
+function PlusIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
+    </svg>
+  );
+}
+
 export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const isClient = user?.role === 'client';
   const initial = user?.name?.charAt(0)?.toUpperCase() ?? 'A';
+  const roleLabel = isClient ? 'Client' : 'Accountant';
 
   return (
     <>
@@ -85,7 +95,13 @@ export default function Navbar() {
             {/* Desktop Nav Links */}
             <nav className="hidden lg:flex items-center gap-0.5 flex-1 ml-4">
               <NavLink href="/jobs">Browse Jobs</NavLink>
-              {isAuthenticated && (
+              {isAuthenticated && isClient && (
+                <>
+                  <NavLink href="/client/jobs">My Jobs</NavLink>
+                  <NavLink href="/client/jobs/new">Post a Job</NavLink>
+                </>
+              )}
+              {isAuthenticated && !isClient && (
                 <NavLink href="/dashboard">My Bids</NavLink>
               )}
             </nav>
@@ -98,7 +114,10 @@ export default function Navbar() {
                     <div className="w-8 h-8 rounded-full bg-brand-light border border-brand/20 flex items-center justify-center">
                       <span className="text-xs font-bold text-brand">{initial}</span>
                     </div>
-                    <span className="text-sm font-medium text-ink max-w-32 truncate">{user?.name}</span>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-ink max-w-32 truncate leading-none">{user?.name}</span>
+                      <span className="text-xs text-muted mt-0.5">{roleLabel}</span>
+                    </div>
                   </div>
                   <Button variant="outline" size="sm" onClick={logout}>
                     Sign Out
@@ -184,7 +203,29 @@ export default function Navbar() {
                   <BriefcaseIcon />
                   Browse Jobs
                 </Link>
-                {isAuthenticated && (
+
+                {isAuthenticated && isClient && (
+                  <>
+                    <Link
+                      href="/client/jobs"
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-colors text-sm font-medium focus-visible:outline-none"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      <ClipboardIcon />
+                      My Jobs
+                    </Link>
+                    <Link
+                      href="/client/jobs/new"
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-colors text-sm font-medium focus-visible:outline-none"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      <PlusIcon />
+                      Post a Job
+                    </Link>
+                  </>
+                )}
+
+                {isAuthenticated && !isClient && (
                   <Link
                     href="/dashboard"
                     className="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-colors text-sm font-medium focus-visible:outline-none"
@@ -206,7 +247,7 @@ export default function Navbar() {
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-white truncate">{user?.name}</p>
-                        <p className="text-xs text-white/40">Accountant</p>
+                        <p className="text-xs text-white/40">{roleLabel}</p>
                       </div>
                     </div>
                     <button

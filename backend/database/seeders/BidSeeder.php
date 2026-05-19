@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\BidStatus;
+use App\Enums\UserRole;
 use App\Models\Bid;
 use App\Models\Job;
 use App\Models\User;
@@ -12,7 +13,8 @@ class BidSeeder extends Seeder
 {
     public function run(): void
     {
-        $users = User::all();
+        // Only accountants can bid
+        $accountants = User::where('role', UserRole::Accountant->value)->get();
         $jobs = Job::all();
 
         $coverLetters = [
@@ -32,8 +34,7 @@ class BidSeeder extends Seeder
         $placedBids = [];
         $deliveryTimes = collect(['1 week', '2 weeks', '3 weeks', '1 month']);
 
-        foreach ($users as $user) {
-            // Guarantee one bid of each status per user
+        foreach ($accountants as $accountant) {
             $guaranteed = [
                 BidStatus::Pending,
                 BidStatus::Accepted,
@@ -49,12 +50,12 @@ class BidSeeder extends Seeder
                     continue;
                 }
 
-                $key = "{$user->id}-{$job->id}";
+                $key = "{$accountant->id}-{$job->id}";
                 $placedBids[$key] = true;
                 $usedJobs->push($job->id);
 
                 Bid::create([
-                    'user_id' => $user->id,
+                    'user_id' => $accountant->id,
                     'job_id' => $job->id,
                     'proposed_price' => rand((int) $job->budget_min, (int) $job->budget_max),
                     'estimated_delivery_time' => $deliveryTimes->random(),
@@ -64,11 +65,10 @@ class BidSeeder extends Seeder
                 ]);
             }
 
-            // Add a few extra random pending bids
             $extras = $shuffledJobs->whereNotIn('id', $usedJobs->all())->take(rand(2, 4));
 
             foreach ($extras as $job) {
-                $key = "{$user->id}-{$job->id}";
+                $key = "{$accountant->id}-{$job->id}";
 
                 if (isset($placedBids[$key])) {
                     continue;
@@ -77,7 +77,7 @@ class BidSeeder extends Seeder
                 $placedBids[$key] = true;
 
                 Bid::create([
-                    'user_id' => $user->id,
+                    'user_id' => $accountant->id,
                     'job_id' => $job->id,
                     'proposed_price' => rand((int) $job->budget_min, (int) $job->budget_max),
                     'estimated_delivery_time' => $deliveryTimes->random(),

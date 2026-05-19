@@ -13,6 +13,7 @@ class Job extends Model
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
         'category_id',
         'title',
         'company_name',
@@ -47,5 +48,10 @@ class Job extends Model
     public function bids(): HasMany
     {
         return $this->hasMany(Bid::class);
+    }
+
+    public function poster(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

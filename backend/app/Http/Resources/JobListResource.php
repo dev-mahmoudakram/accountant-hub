@@ -21,6 +21,10 @@ class JobListResource extends JsonResource
             'status' => $this->status->value,
             'bids_count' => $this->bids_count ?? 0,
             'category' => new JobCategoryResource($this->whenLoaded('category')),
+            'poster' => $this->whenLoaded('poster', fn () => [
+                'id' => $this->poster->id,
+                'name' => $this->poster->name,
+            ]),
             'created_at' => $this->created_at->toISOString(),
         ];
     }

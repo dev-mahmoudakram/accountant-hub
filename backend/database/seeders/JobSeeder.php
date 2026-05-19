@@ -3,8 +3,10 @@
 namespace Database\Seeders;
 
 use App\Enums\JobStatus;
+use App\Enums\UserRole;
 use App\Models\Job;
 use App\Models\JobCategory;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class JobSeeder extends Seeder
@@ -12,6 +14,7 @@ class JobSeeder extends Seeder
     public function run(): void
     {
         $categories = JobCategory::all();
+        $clients = User::where('role', UserRole::Client->value)->get();
 
         $jobs = [
             ['title' => 'Bookkeeper Needed for Small E-commerce Business', 'category' => 'bookkeeping', 'budget_min' => 500, 'budget_max' => 1000, 'status' => JobStatus::Open],
@@ -72,10 +75,10 @@ class JobSeeder extends Seeder
                 continue;
             }
 
-            // Spread jobs across the last 6 months so date filters have real variety
             $createdAt = now()->subDays(rand(0, 180));
 
             $job = new Job([
+                'user_id' => $clients->get($i % $clients->count())->id,
                 'category_id' => $category->id,
                 'title' => $jobData['title'],
                 'company_name' => $companies[$i % count($companies)],
@@ -90,7 +93,6 @@ class JobSeeder extends Seeder
                 'status' => $jobData['status'],
             ]);
 
-            // Assign timestamps directly so Eloquent doesn't overwrite with now()
             $job->created_at = $createdAt;
             $job->updated_at = $createdAt;
             $job->save();

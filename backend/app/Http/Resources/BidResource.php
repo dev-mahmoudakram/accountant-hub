@@ -16,7 +16,8 @@ class BidResource extends JsonResource
             'cover_letter' => $this->cover_letter,
             'experience_summary' => $this->experience_summary,
             'status' => $this->status->value,
-            'job' => new JobListResource($this->whenLoaded('job')),
+            'job' => JobListResource::make($this->whenLoaded('job')),
+            'accountant' => UserResource::make($this->whenLoaded('user')),
             'created_at' => $this->created_at->toISOString(),
         ];
     }

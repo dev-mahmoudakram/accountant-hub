@@ -6,6 +6,11 @@ export interface JobCategory {
   slug: string;
 }
 
+export interface JobPoster {
+  id: number;
+  name: string;
+}
+
 export interface JobListItem {
   id: number;
   title: string;
@@ -18,6 +23,7 @@ export interface JobListItem {
   status: JobStatus;
   bids_count: number;
   category: JobCategory;
+  poster?: JobPoster;
   created_at: string;
 }
 
@@ -36,4 +42,17 @@ export interface JobFilters {
   sort?: 'newest' | 'highest_budget';
   page?: number;
   per_page?: number;
+}
+
+export interface JobFormData {
+  category_id: number;
+  title: string;
+  company_name: string;
+  short_description: string;
+  description: string;
+  budget_min: number;
+  budget_max: number;
+  deadline: string;
+  expected_delivery_time: string;
+  required_skills: string[];
 }

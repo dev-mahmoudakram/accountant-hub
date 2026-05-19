@@ -29,14 +29,25 @@ export default function JobCard({ job }: JobCardProps) {
           {job.title}
         </h3>
 
-        {/* Company */}
-        <p className="text-xs font-medium text-muted mb-3 flex items-center gap-1.5">
-          <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-          </svg>
-          {job.company_name}
-        </p>
+        {/* Company + Poster */}
+        <div className="flex items-center justify-between mb-3 gap-2">
+          <p className="text-xs font-medium text-muted flex items-center gap-1.5 truncate">
+            <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+            <span className="truncate">{job.company_name}</span>
+          </p>
+          {job.poster && (
+            <span className="text-xs text-muted shrink-0 flex items-center gap-1">
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              {job.poster.name}
+            </span>
+          )}
+        </div>
 
         {/* Description */}
         <p className="text-sm text-muted line-clamp-2 flex-1 mb-4 leading-relaxed">

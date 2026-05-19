@@ -28,6 +28,10 @@ class JobDetailResource extends JsonResource
                 fn () => $this->bids->contains('user_id', auth('sanctum')->id())
             ),
             'category' => new JobCategoryResource($this->whenLoaded('category')),
+            'poster' => $this->whenLoaded('poster', fn () => [
+                'id' => $this->poster->id,
+                'name' => $this->poster->name,
+            ]),
             'created_at' => $this->created_at->toISOString(),
         ];
     }

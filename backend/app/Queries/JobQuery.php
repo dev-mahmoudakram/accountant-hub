@@ -13,7 +13,7 @@ class JobQuery
     public function get(JobIndexRequest $request): LengthAwarePaginator
     {
         $query = Job::query()
-            ->with('category')
+            ->with(['category', 'poster'])
             ->withCount('bids');
 
         if ($search = $request->validated('search')) {
