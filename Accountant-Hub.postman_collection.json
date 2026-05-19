@@ -21,7 +21,7 @@
       "name": "Auth",
       "item": [
         {
-          "name": "Register",
+          "name": "Register (Accountant)",
           "event": [
             {
               "listen": "test",
@@ -45,7 +45,41 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Test Accountant\",\n  \"email\": \"test@example.com\",\n  \"password\": \"password\",\n  \"password_confirmation\": \"password\"\n}"
+              "raw": "{\n  \"name\": \"Test Accountant\",\n  \"email\": \"accountant@example.com\",\n  \"password\": \"password\",\n  \"password_confirmation\": \"password\",\n  \"role\": \"accountant\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/register",
+              "host": ["{{base_url}}"],
+              "path": ["register"]
+            }
+          }
+        },
+        {
+          "name": "Register (Client)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data && res.data.token) {",
+                  "    pm.collectionVariables.set('token', res.data.token);",
+                  "    console.log('Token saved:', res.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Client\",\n  \"email\": \"client@example.com\",\n  \"password\": \"password\",\n  \"password_confirmation\": \"password\",\n  \"role\": \"client\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/register",
@@ -140,7 +174,7 @@
       ]
     },
     {
-      "name": "Jobs",
+      "name": "Jobs (Public)",
       "item": [
         {
           "name": "List Jobs",
@@ -159,6 +193,8 @@
                 { "key": "budget_min", "value": "", "disabled": true, "description": "Minimum budget" },
                 { "key": "budget_max", "value": "", "disabled": true, "description": "Maximum budget" },
                 { "key": "sort", "value": "newest", "disabled": true, "description": "newest or highest_budget" },
+                { "key": "date_from", "value": "", "disabled": true, "description": "Filter from month, format: YYYY-MM" },
+                { "key": "date_to", "value": "", "disabled": true, "description": "Filter to month, format: YYYY-MM" },
                 { "key": "page", "value": "1", "disabled": true },
                 { "key": "per_page", "value": "12", "disabled": true }
               ]
@@ -218,6 +254,24 @@
           }
         },
         {
+          "name": "List Jobs — Filter by Date Range",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/jobs?date_from=2026-01&date_to=2026-05",
+              "host": ["{{base_url}}"],
+              "path": ["jobs"],
+              "query": [
+                { "key": "date_from", "value": "2026-01" },
+                { "key": "date_to", "value": "2026-05" }
+              ]
+            }
+          }
+        },
+        {
           "name": "List Jobs — Sort by Highest Budget",
           "request": {
             "method": "GET",
@@ -231,6 +285,20 @@
               "query": [
                 { "key": "sort", "value": "highest_budget" }
               ]
+            }
+          }
+        },
+        {
+          "name": "Get Job Years",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/jobs/years",
+              "host": ["{{base_url}}"],
+              "path": ["jobs", "years"]
             }
           }
         },
@@ -252,7 +320,8 @@
       ]
     },
     {
-      "name": "Bids",
+      "name": "Accountant — Bids",
+      "description": "Requires authentication as an accountant (role: accountant)",
       "item": [
         {
           "name": "Submit Bid",
@@ -290,6 +359,165 @@
                 { "key": "page", "value": "1", "disabled": true },
                 { "key": "per_page", "value": "12", "disabled": true }
               ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Client — Jobs",
+      "description": "Requires authentication as a client (role: client). All routes are prefixed with /client.",
+      "item": [
+        {
+          "name": "List My Jobs",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/client/jobs",
+              "host": ["{{base_url}}"],
+              "path": ["client", "jobs"],
+              "query": [
+                { "key": "page", "value": "1", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Post a Job",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category_id\": 1,\n  \"title\": \"Bookkeeper Needed for Small E-commerce Business\",\n  \"company_name\": \"Acme Corp\",\n  \"short_description\": \"Looking for an experienced bookkeeper to manage monthly accounts and reconciliations.\",\n  \"description\": \"We are a growing e-commerce company seeking a detail-oriented bookkeeper to handle our monthly financial records. Responsibilities include accounts payable/receivable, bank reconciliations, and preparing financial summaries. Must be proficient in QuickBooks and have at least 3 years of experience.\",\n  \"budget_min\": 500,\n  \"budget_max\": 1500,\n  \"deadline\": \"2026-07-01\",\n  \"expected_delivery_time\": \"1 month\",\n  \"required_skills\": [\"QuickBooks\", \"Bookkeeping\", \"Bank Reconciliation\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/client/jobs",
+              "host": ["{{base_url}}"],
+              "path": ["client", "jobs"]
+            }
+          }
+        },
+        {
+          "name": "Get My Job Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/client/jobs/1",
+              "host": ["{{base_url}}"],
+              "path": ["client", "jobs", "1"]
+            }
+          }
+        },
+        {
+          "name": "Update a Job",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Job Title\",\n  \"budget_max\": 2000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/client/jobs/1",
+              "host": ["{{base_url}}"],
+              "path": ["client", "jobs", "1"]
+            }
+          }
+        },
+        {
+          "name": "Delete a Job",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/client/jobs/1",
+              "host": ["{{base_url}}"],
+              "path": ["client", "jobs", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Client — Bid Management",
+      "description": "Requires authentication as a client (role: client). Review and accept/reject bids on owned jobs.",
+      "item": [
+        {
+          "name": "List Bids for a Job",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/client/jobs/1/bids",
+              "host": ["{{base_url}}"],
+              "path": ["client", "jobs", "1", "bids"],
+              "query": [
+                { "key": "page", "value": "1", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Accept a Bid",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"accepted\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/client/jobs/1/bids/1",
+              "host": ["{{base_url}}"],
+              "path": ["client", "jobs", "1", "bids", "1"],
+              "description": "Accepting a bid automatically closes the job and rejects all other bids."
+            }
+          }
+        },
+        {
+          "name": "Reject a Bid",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"rejected\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/client/jobs/1/bids/1",
+              "host": ["{{base_url}}"],
+              "path": ["client", "jobs", "1", "bids", "1"]
             }
           }
         }
