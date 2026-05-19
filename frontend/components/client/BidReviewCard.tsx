@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { BidWithAccountant, BidStatus } from '@/types/bid';
+import { BidWithAccountant } from '@/types/bid';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import { formatCurrency } from '@/lib/formatters';
@@ -12,11 +12,6 @@ interface Props {
   onStatusChange: (bidId: number, status: 'accepted' | 'rejected') => Promise<void>;
 }
 
-const STATUS_BADGE: Record<BidStatus, 'success' | 'error' | 'warning'> = {
-  accepted: 'success',
-  rejected: 'error',
-  pending: 'warning',
-};
 
 export default function BidReviewCard({ bid, jobOpen, onStatusChange }: Props) {
   const [expanded, setExpanded] = useState(false);
@@ -39,7 +34,7 @@ export default function BidReviewCard({ bid, jobOpen, onStatusChange }: Props) {
           <p className="text-sm font-semibold text-ink">{bid.accountant.name}</p>
           <p className="text-xs text-muted">{bid.accountant.email}</p>
         </div>
-        <Badge variant={STATUS_BADGE[bid.status]}>
+        <Badge variant={bid.status}>
           {bid.status.charAt(0).toUpperCase() + bid.status.slice(1)}
         </Badge>
       </div>
@@ -95,7 +90,7 @@ export default function BidReviewCard({ bid, jobOpen, onStatusChange }: Props) {
           <Button
             variant="outline"
             size="sm"
-            className="flex-1 !border-red-200 !text-red-500 hover:!bg-red-50"
+            className="flex-1 border-red-200! text-red-500! hover:bg-red-50!"
             loading={loading}
             onClick={() => handleAction('rejected')}
           >
