@@ -22,7 +22,7 @@ export default function ClientJobCard({ job, onDelete }: Props) {
           </Link>
           <p className="text-xs text-muted mt-1">{job.category.name}</p>
         </div>
-        <Badge variant={job.status === 'open' ? 'success' : 'default'}>
+        <Badge variant={job.status === 'open' ? 'open' : 'closed'}>
           {job.status === 'open' ? 'Open' : 'Closed'}
         </Badge>
       </div>
