@@ -20,7 +20,7 @@ class LoginAccountantAction
             throw new AuthenticationException('The provided credentials are incorrect.');
         }
 
-        $token = $user->createToken('api-token')->plainTextToken;
+        $token = $user->createToken('api-token', [$request->role])->plainTextToken;
 
         return compact('user', 'token');
     }

@@ -37,8 +37,12 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     if (res.status === 401 && typeof window !== 'undefined') {
       window.dispatchEvent(new Event('auth:unauthorized'));
     }
-    const error = await res.json().catch(() => ({ message: 'Request failed' }));
-    throw { status: res.status, ...error };
+    const body = await res.json().catch(() => ({ message: 'Request failed' }));
+    const err = Object.assign(new Error(body.message ?? 'Request failed'), {
+      status: res.status,
+      errors: body.errors,
+    });
+    throw err;
   }
 
   return res.json() as Promise<T>;

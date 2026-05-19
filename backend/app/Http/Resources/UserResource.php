@@ -13,7 +13,7 @@ class UserResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'email' => $this->email,
-            'role' => $this->role->value,
+            'role' => $this->currentAccessToken()?->abilities[0] ?? $request->input('role'),
             'created_at' => $this->created_at->toISOString(),
         ];
     }

@@ -12,7 +12,9 @@ class EnsureRole
     {
         $user = $request->user();
 
-        if (! $user || ! in_array($user->role->value, $roles, true)) {
+        $hasRole = ! empty($roles) && collect($roles)->contains(fn ($r) => $user->tokenCan($r));
+
+        if (! $user || ! $hasRole) {
             return response()->json(['message' => 'This action is unauthorized.'], 403);
         }
 

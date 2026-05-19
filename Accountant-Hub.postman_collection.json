@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Accountant Hub",
-    "description": "Full API collection for Accountant Hub. Set `base_url` to your backend URL before use. `token` is set automatically after a successful login or register.",
+    "description": "Full API collection for Accountant Hub.\n\nSet `base_url` to your backend URL before use.\n`token` is set automatically after a successful login or switch-role.\n\nRole model: role is a per-session Sanctum token ability, not a user column. You choose your role at login and can switch without signing out.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -21,17 +21,15 @@
       "name": "Auth",
       "item": [
         {
-          "name": "Register (Accountant)",
+          "name": "Register",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "const res = pm.response.json();",
-                  "if (res.success && res.data && res.data.token) {",
-                  "    pm.collectionVariables.set('token', res.data.token);",
-                  "    console.log('Token saved:', res.data.token);",
-                  "}"
+                  "pm.test('Registration successful', () => pm.expect(res.success).to.be.true);",
+                  "// Register returns 201 with no token — sign in separately after registering."
                 ],
                 "type": "text/javascript"
               }
@@ -45,51 +43,18 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Test Accountant\",\n  \"email\": \"accountant@example.com\",\n  \"password\": \"password\",\n  \"password_confirmation\": \"password\",\n  \"role\": \"accountant\"\n}"
+              "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"test@example.com\",\n  \"password\": \"password\",\n  \"password_confirmation\": \"password\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/register",
               "host": ["{{base_url}}"],
               "path": ["register"]
-            }
-          }
-        },
-        {
-          "name": "Register (Client)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const res = pm.response.json();",
-                  "if (res.success && res.data && res.data.token) {",
-                  "    pm.collectionVariables.set('token', res.data.token);",
-                  "    console.log('Token saved:', res.data.token);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Accept", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Test Client\",\n  \"email\": \"client@example.com\",\n  \"password\": \"password\",\n  \"password_confirmation\": \"password\",\n  \"role\": \"client\"\n}"
             },
-            "url": {
-              "raw": "{{base_url}}/register",
-              "host": ["{{base_url}}"],
-              "path": ["register"]
-            }
+            "description": "Creates a new account. Returns 201 with no token — you must login separately and choose a role."
           }
         },
         {
-          "name": "Login",
+          "name": "Login (as Accountant)",
           "event": [
             {
               "listen": "test",
@@ -113,13 +78,85 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"demo@accountant-hub.test\",\n  \"password\": \"password\"\n}"
+              "raw": "{\n  \"email\": \"demo@accountant-hub.test\",\n  \"password\": \"password\",\n  \"role\": \"accountant\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/login",
               "host": ["{{base_url}}"],
               "path": ["login"]
+            },
+            "description": "Authenticates as an accountant. The `role` field is required and sets the token ability. Use this token to access Accountant — Bids endpoints."
+          }
+        },
+        {
+          "name": "Login (as Client)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data && res.data.token) {",
+                  "    pm.collectionVariables.set('token', res.data.token);",
+                  "    console.log('Token saved:', res.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
             }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"demo@accountant-hub.test\",\n  \"password\": \"password\",\n  \"role\": \"client\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/login",
+              "host": ["{{base_url}}"],
+              "path": ["login"]
+            },
+            "description": "Authenticates as a client. The `role` field is required. Use this token to access Client — Jobs and Client — Bid Management endpoints."
+          }
+        },
+        {
+          "name": "Switch Role",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data && res.data.token) {",
+                  "    pm.collectionVariables.set('token', res.data.token);",
+                  "    console.log('New token saved after role switch:', res.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"client\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/switch-role",
+              "host": ["{{base_url}}"],
+              "path": ["switch-role"]
+            },
+            "description": "Revokes the current token and issues a new one with the requested role ability. Pass `\"role\": \"client\"` or `\"role\": \"accountant\"`. The new token is saved automatically by the test script."
           }
         },
         {
@@ -134,7 +171,8 @@
               "raw": "{{base_url}}/me",
               "host": ["{{base_url}}"],
               "path": ["me"]
-            }
+            },
+            "description": "Returns the authenticated user and their current role (read from the token ability)."
           }
         },
         {
@@ -314,14 +352,15 @@
               "raw": "{{base_url}}/jobs/1",
               "host": ["{{base_url}}"],
               "path": ["jobs", "1"]
-            }
+            },
+            "description": "Public. Includes attachments array (each item has path, name, url). Pass a token to get the user_has_bid field."
           }
         }
       ]
     },
     {
       "name": "Accountant — Bids",
-      "description": "Requires authentication as an accountant (role: accountant)",
+      "description": "Requires authentication as an accountant. Login with `role: \"accountant\"` first.",
       "item": [
         {
           "name": "Submit Bid",
@@ -334,7 +373,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"proposed_price\": 750,\n  \"estimated_delivery_time\": \"2 weeks\",\n  \"cover_letter\": \"I have extensive experience in this area and would be delighted to bring my expertise to your project. I have handled similar engagements for clients in your industry and understand the nuances involved.\",\n  \"experience_summary\": \"CPA certified with 6 years of public accounting experience. Specialized in tax compliance and financial reporting for SMEs.\"\n}"
+              "raw": "{\n  \"proposed_price\": 750,\n  \"estimated_delivery_time\": \"2 weeks\",\n  \"cover_letter\": \"I have extensive experience in this area and would be delighted to bring my expertise to your project.\",\n  \"experience_summary\": \"CPA certified with 6 years of public accounting experience. Specialized in tax compliance and financial reporting for SMEs.\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/jobs/1/bids",
@@ -366,7 +405,7 @@
     },
     {
       "name": "Client — Jobs",
-      "description": "Requires authentication as a client (role: client). All routes are prefixed with /client.",
+      "description": "Requires authentication as a client. Login with `role: \"client\"` first. All routes are prefixed with /client.",
       "item": [
         {
           "name": "List My Jobs",
@@ -479,7 +518,7 @@
               "host": ["{{base_url}}"],
               "path": ["client", "jobs", "1", "attachments"]
             },
-            "description": "Uploads a file and appends its path to the job's attachments array. Returns the attachment object with path, name, and url. Original filename is preserved."
+            "description": "Uploads a file and appends it to the job's attachments array. Original filename is preserved. Returns the attachment object: `{ path, name, url }`."
           }
         },
         {
@@ -500,14 +539,14 @@
               "host": ["{{base_url}}"],
               "path": ["client", "jobs", "1", "attachments"]
             },
-            "description": "Deletes the file from storage and removes its path from the job's attachments array. Pass the exact `path` value returned by the upload endpoint."
+            "description": "Deletes the file from storage and removes its path from the job. Pass the exact `path` value returned by the upload endpoint."
           }
         }
       ]
     },
     {
       "name": "Client — Bid Management",
-      "description": "Requires authentication as a client (role: client). Review and accept/reject bids on owned jobs.",
+      "description": "Requires authentication as a client. Review and accept/reject bids on owned jobs.",
       "item": [
         {
           "name": "List Bids for a Job",
@@ -543,9 +582,9 @@
             "url": {
               "raw": "{{base_url}}/client/jobs/1/bids/1",
               "host": ["{{base_url}}"],
-              "path": ["client", "jobs", "1", "bids", "1"],
-              "description": "Accepting a bid automatically closes the job and rejects all other bids."
-            }
+              "path": ["client", "jobs", "1", "bids", "1"]
+            },
+            "description": "Accepting a bid automatically closes the job and rejects all other pending bids on that job."
           }
         },
         {

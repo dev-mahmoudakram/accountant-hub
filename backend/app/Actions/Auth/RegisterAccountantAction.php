@@ -7,12 +7,8 @@ use App\Models\User;
 
 class RegisterAccountantAction
 {
-    public function execute(RegisterRequest $request): array
+    public function execute(RegisterRequest $request): void
     {
-        $user = User::create($request->validated());
-
-        $token = $user->createToken('api-token')->plainTextToken;
-
-        return compact('user', 'token');
+        User::create($request->validated());
     }
 }

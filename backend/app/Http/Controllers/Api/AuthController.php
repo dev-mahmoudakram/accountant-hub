@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Actions\Auth\LoginAccountantAction;
 use App\Actions\Auth\RegisterAccountantAction;
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
@@ -11,20 +12,17 @@ use App\Http\Resources\UserResource;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class AuthController extends Controller
 {
     public function register(RegisterRequest $request, RegisterAccountantAction $action): JsonResponse
     {
-        ['user' => $user, 'token' => $token] = $action->execute($request);
+        $action->execute($request);
 
         return response()->json([
             'success' => true,
-            'message' => 'Registration successful.',
-            'data' => [
-                'user' => new UserResource($user),
-                'token' => $token,
-            ],
+            'message' => 'Account created successfully. Please sign in.',
         ], 201);
     }
 
@@ -42,6 +40,24 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Login successful.',
+            'data' => [
+                'user' => new UserResource($user),
+                'token' => $token,
+            ],
+        ]);
+    }
+
+    public function switchRole(Request $request): JsonResponse
+    {
+        $request->validate(['role' => ['required', Rule::enum(UserRole::class)]]);
+
+        $user = $request->user();
+        $user->currentAccessToken()->delete();
+
+        $token = $user->createToken('api-token', [$request->role])->plainTextToken;
+
+        return response()->json([
+            'success' => true,
             'data' => [
                 'user' => new UserResource($user),
                 'token' => $token,

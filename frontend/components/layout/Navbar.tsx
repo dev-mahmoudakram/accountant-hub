@@ -1,13 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/components/auth/AuthProvider';
 import Container from './Container';
 import Button from '@/components/ui/Button';
 import { mobileMenuOverlay, mobileMenuDrawer } from '@/lib/animations';
+import { api } from '@/lib/api';
+import { ApiResponse } from '@/types/api';
+import { AuthResponse } from '@/types/user';
 
 function NavLink({
   href,
@@ -66,12 +69,50 @@ function PlusIcon() {
 }
 
 export default function Navbar() {
-  const { user, isAuthenticated, isReady, logout } = useAuth();
+  const { user, isAuthenticated, isReady, logout, login } = useAuth();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [switching, setSwitching] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isClient = user?.role === 'client';
   const initial = user?.name?.charAt(0)?.toUpperCase() ?? 'A';
   const roleLabel = isClient ? 'Client' : 'Accountant';
+  const otherRole = isClient ? 'accountant' : 'client';
+  const otherRoleLabel = isClient ? 'Accountant' : 'Client';
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
+
+  function openDropdown() {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    setDropdownOpen(true);
+  }
+
+  function scheduleClose() {
+    closeTimer.current = setTimeout(() => setDropdownOpen(false), 150);
+  }
+
+  async function handleSwitchRole() {
+    setSwitching(true);
+    try {
+      const res = await api.post<ApiResponse<AuthResponse>>('/switch-role', { role: otherRole });
+      login(res.data.token, res.data.user);
+      setDropdownOpen(false);
+      router.push(otherRole === 'client' ? '/client/jobs' : '/jobs');
+    } finally {
+      setSwitching(false);
+    }
+  }
 
   return (
     <>
@@ -112,20 +153,78 @@ export default function Navbar() {
             {/* Desktop Auth */}
             <div className="hidden lg:flex items-center gap-2 shrink-0">
               {isAuthenticated ? (
-                <>
-                  <div className="flex items-center gap-2.5 pr-1">
+                <div
+                  ref={dropdownRef}
+                  className="relative"
+                  onMouseEnter={openDropdown}
+                  onMouseLeave={scheduleClose}
+                >
+                  <button
+                    type="button"
+                    className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-surface transition-colors focus-visible:outline-none"
+                    onClick={() => setDropdownOpen((o) => !o)}
+                    aria-haspopup="true"
+                  >
                     <div className="w-8 h-8 rounded-full bg-brand-light border border-brand/20 flex items-center justify-center">
                       <span className="text-xs font-bold text-brand">{initial}</span>
                     </div>
-                    <div className="flex flex-col">
+                    <div className="flex flex-col text-left">
                       <span className="text-sm font-medium text-ink max-w-32 truncate leading-none">{user?.name}</span>
                       <span className="text-xs text-muted mt-0.5">{roleLabel}</span>
                     </div>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={logout}>
-                    Sign Out
-                  </Button>
-                </>
+                    <svg
+                      className={`w-3.5 h-3.5 text-muted ml-0.5 transition-transform duration-150 ${dropdownOpen ? 'rotate-180' : ''}`}
+                      fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  <AnimatePresence>
+                    {dropdownOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 top-full mt-2 w-52 bg-white border border-border rounded-xl shadow-lg py-1.5 z-50"
+                      >
+                        <Link
+                          href="/profile"
+                          className="flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-ink hover:bg-surface transition-colors"
+                          onClick={() => setDropdownOpen(false)}
+                        >
+                          <svg className="w-4 h-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                          Profile
+                        </Link>
+                        <button
+                          type="button"
+                          disabled={switching}
+                          onClick={handleSwitchRole}
+                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-ink hover:bg-surface transition-colors disabled:opacity-50"
+                        >
+                          <svg className="w-4 h-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                          </svg>
+                          {switching ? 'Switching…' : `Switch to ${otherRoleLabel}`}
+                        </button>
+                        <div className="border-t border-border my-1" />
+                        <button
+                          type="button"
+                          onClick={() => { logout(); setDropdownOpen(false); }}
+                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                          </svg>
+                          Sign Out
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               ) : isReady ? (
                 <>
                   <Link href="/login" className="focus-visible:outline-none">

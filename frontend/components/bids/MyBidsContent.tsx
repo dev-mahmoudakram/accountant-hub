@@ -61,10 +61,14 @@ export default function MyBidsContent() {
     let cancelled = false;
 
     startTransition(async () => {
-      const res = await api.get<PaginatedResponse<Bid>>(`/my-bids?page=${page}`);
-      if (!cancelled) {
-        setBids(res.data);
-        setMeta(res.meta);
+      try {
+        const res = await api.get<PaginatedResponse<Bid>>(`/my-bids?page=${page}`);
+        if (!cancelled) {
+          setBids(res.data);
+          setMeta(res.meta);
+        }
+      } catch {
+        if (!cancelled) setBids([]);
       }
     });
 

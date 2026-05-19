@@ -476,6 +476,97 @@ export default function HomeContent() {
         </div>
       </section>
 
+      {/* ════════════════ WHO IS IT FOR? ════════════════ */}
+      <section className="py-20 lg:py-24 bg-surface">
+        <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-14"
+          >
+            <span className="text-xs font-semibold uppercase tracking-widest text-brand mb-3 block">Who Is It For?</span>
+            <h2 className="text-2xl sm:text-3xl font-bold text-ink mb-3">Built for Both Sides</h2>
+            <p className="text-muted max-w-md mx-auto">
+              Whether you need accounting work done or you&apos;re a professional looking for clients, AccountantHub has you covered.
+            </p>
+          </motion.div>
+
+          <motion.div
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-60px' }}
+            className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+          >
+            {/* Clients */}
+            <motion.div variants={fadeUp} className="bg-white border border-border rounded-2xl p-8">
+              <div className="w-12 h-12 rounded-2xl bg-brand-light flex items-center justify-center text-brand mb-5">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
+              <span className="text-xs font-semibold uppercase tracking-widest text-brand mb-2 block">For Clients</span>
+              <h3 className="text-xl font-bold text-ink mb-3">Post your job and hire with confidence</h3>
+              <p className="text-sm text-muted leading-relaxed mb-6">
+                Businesses and individuals who need accounting services can post jobs and receive bids from qualified professionals.
+              </p>
+              <ul className="space-y-3">
+                {[
+                  'Post a job with your budget and deadline',
+                  'Receive competitive bids from verified accountants',
+                  'Attach documents and requirements directly to your job',
+                  'Review bids and accept the best fit',
+                  'Close the job once the work is complete',
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-3">
+                    <span className="w-5 h-5 rounded-full bg-brand/10 border border-brand/20 flex items-center justify-center shrink-0 mt-0.5">
+                      <svg className="w-3 h-3 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </span>
+                    <span className="text-sm text-muted leading-relaxed">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+
+            {/* Accountants */}
+            <motion.div variants={fadeUp} className="bg-white border border-border rounded-2xl p-8">
+              <div className="w-12 h-12 rounded-2xl bg-brand-light flex items-center justify-center text-brand mb-5">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <span className="text-xs font-semibold uppercase tracking-widest text-brand mb-2 block">For Accountants</span>
+              <h3 className="text-xl font-bold text-ink mb-3">Find clients and grow your practice</h3>
+              <p className="text-sm text-muted leading-relaxed mb-6">
+                Accounting professionals can browse jobs, submit proposals, and manage their entire client pipeline from one dashboard.
+              </p>
+              <ul className="space-y-3">
+                {[
+                  'Browse jobs filtered by category, budget and deadline',
+                  'Submit a bid with your price and cover letter',
+                  'Track all your bids — pending, accepted, rejected',
+                  'Download client documents and attachments',
+                  'No subscription fee — free to join and bid',
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-3">
+                    <span className="w-5 h-5 rounded-full bg-brand/10 border border-brand/20 flex items-center justify-center shrink-0 mt-0.5">
+                      <svg className="w-3 h-3 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </span>
+                    <span className="text-sm text-muted leading-relaxed">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
       {/* ════════════════ SPLIT SECTION — FOR ACCOUNTANTS ════════════════ */}
       <section className="py-20 lg:py-24 bg-ink overflow-hidden">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
