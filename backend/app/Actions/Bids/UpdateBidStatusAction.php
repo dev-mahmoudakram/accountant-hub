@@ -13,9 +13,14 @@ class UpdateBidStatusAction
     {
         $bid->update(['status' => $status]);
 
-        // Auto-close the job when a bid is accepted
+        // Auto-close the job and reject all other bids when a bid is accepted
         if ($status === BidStatus::Accepted) {
             Job::where('id', $bid->job_id)->update(['status' => JobStatus::Closed]);
+
+            Bid::where('job_id', $bid->job_id)
+                ->where('id', '!=', $bid->id)
+                ->where('status', BidStatus::Pending)
+                ->update(['status' => BidStatus::Rejected]);
         }
 
         return $bid->refresh();
