@@ -14,6 +14,7 @@ interface Option {
 
 interface JobFiltersPanelProps {
   categories: JobCategory[];
+  years: number[];
 }
 
 const SORT_OPTIONS: Option[] = [
@@ -96,7 +97,28 @@ const categorySelectStyles: StylesConfig<Option, true> = {
 
 const sortSelectStyles: StylesConfig<Option, false> = { ...sharedControlStyles };
 
-export default function JobFiltersPanel({ categories }: JobFiltersPanelProps) {
+const dateSelectStyles: StylesConfig<Option, false> = {
+  ...sharedControlStyles,
+  control: (base, { isFocused }) => ({
+    ...base,
+    minHeight: '36px',
+    borderRadius: '0.5rem',
+    borderColor: isFocused ? '#019a51' : '#e5e7eb',
+    boxShadow: isFocused ? '0 0 0 3px rgba(1,154,81,0.15)' : 'none',
+    backgroundColor: '#fff',
+    fontSize: '0.8125rem',
+    transition: 'border-color 150ms, box-shadow 150ms',
+    cursor: 'pointer',
+    '&:hover': { borderColor: isFocused ? '#019a51' : '#d1d5db' },
+  }),
+  placeholder: (base) => ({ ...base, color: '#9ca3af', fontSize: '0.8125rem' }),
+  singleValue: (base) => ({ ...base, color: '#0a0a0a', fontSize: '0.8125rem' }),
+  input: (base) => ({ ...base, color: '#0a0a0a', fontSize: '0.8125rem', margin: 0, padding: 0 }),
+  valueContainer: (base) => ({ ...base, padding: '0 10px' }),
+  dropdownIndicator: (base) => ({ ...base, color: '#9ca3af', padding: '0 6px', '&:hover': { color: '#6b7280' } }),
+};
+
+export default function JobFiltersPanel({ categories, years }: JobFiltersPanelProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -106,6 +128,8 @@ export default function JobFiltersPanel({ categories }: JobFiltersPanelProps) {
   const urlSearch = searchParams.get('search') ?? '';
   const urlBudgetMin = searchParams.get('budget_min') ?? '';
   const urlBudgetMax = searchParams.get('budget_max') ?? '';
+  const urlDateFrom = searchParams.get('date_from') ?? '';
+  const urlDateTo = searchParams.get('date_to') ?? '';
 
   const [search, setSearch] = useState(urlSearch);
   const [committedSearch, setCommittedSearch] = useState(urlSearch);
@@ -118,6 +142,25 @@ export default function JobFiltersPanel({ categories }: JobFiltersPanelProps) {
   const [budgetMax, setBudgetMax] = useState(urlBudgetMax);
   const [committedBudgetMax, setCommittedBudgetMax] = useState(urlBudgetMax);
   if (committedBudgetMax !== urlBudgetMax) { setCommittedBudgetMax(urlBudgetMax); setBudgetMax(urlBudgetMax); }
+
+  const [fromMonth, setFromMonth] = useState(() => urlDateFrom.split('-')[1] ?? '');
+  const [fromYear,  setFromYear]  = useState(() => urlDateFrom.split('-')[0] ?? '');
+  const [toMonth,   setToMonth]   = useState(() => urlDateTo.split('-')[1] ?? '');
+  const [toYear,    setToYear]    = useState(() => urlDateTo.split('-')[0] ?? '');
+
+  // Sync when URL changes externally (e.g. "Clear all")
+  const [committedDateFrom, setCommittedDateFrom] = useState(urlDateFrom);
+  if (committedDateFrom !== urlDateFrom) {
+    setCommittedDateFrom(urlDateFrom);
+    setFromMonth(urlDateFrom.split('-')[1] ?? '');
+    setFromYear(urlDateFrom.split('-')[0] ?? '');
+  }
+  const [committedDateTo, setCommittedDateTo] = useState(urlDateTo);
+  if (committedDateTo !== urlDateTo) {
+    setCommittedDateTo(urlDateTo);
+    setToMonth(urlDateTo.split('-')[1] ?? '');
+    setToYear(urlDateTo.split('-')[0] ?? '');
+  }
 
   function pushParam(key: string, value: string) {
     const base = new URLSearchParams(window.location.search);
@@ -152,7 +195,46 @@ export default function JobFiltersPanel({ categories }: JobFiltersPanelProps) {
   const selectedSlugs = categoryParam ? categoryParam.split(',').filter(Boolean) : [];
   const categoryValue = categoryOptions.filter((o) => selectedSlugs.includes(o.value));
   const sortValue = SORT_OPTIONS.find((o) => o.value === sort) ?? SORT_OPTIONS[0];
-  const hasFilters = !!(urlSearch || categoryParam || urlBudgetMin || urlBudgetMax || sort !== 'newest');
+  const hasFilters = !!(urlSearch || categoryParam || urlBudgetMin || urlBudgetMax || urlDateFrom || urlDateTo || sort !== 'newest');
+
+  const MONTHS = [
+    { value: '01', label: 'January' }, { value: '02', label: 'February' },
+    { value: '03', label: 'March' },   { value: '04', label: 'April' },
+    { value: '05', label: 'May' },     { value: '06', label: 'June' },
+    { value: '07', label: 'July' },    { value: '08', label: 'August' },
+    { value: '09', label: 'September' },{ value: '10', label: 'October' },
+    { value: '11', label: 'November' },{ value: '12', label: 'December' },
+  ];
+  const YEARS = years;
+
+  function isFromAfterTo(fYear: string, fMonth: string, tYear: string, tMonth: string): boolean {
+    if (!fYear || !fMonth || !tYear || !tMonth) return false;
+    return parseInt(fYear) * 100 + parseInt(fMonth) > parseInt(tYear) * 100 + parseInt(tMonth);
+  }
+
+  function handleDateChange(type: 'date_from' | 'date_to', field: 'year' | 'month', value: string) {
+    const isFrom = type === 'date_from';
+    const month = field === 'month' ? value : (isFrom ? fromMonth : toMonth);
+    const year  = field === 'year'  ? value : (isFrom ? fromYear  : toYear);
+
+    if (isFrom) { field === 'month' ? setFromMonth(value) : setFromYear(value); }
+    else        { field === 'month' ? setToMonth(value)   : setToYear(value);   }
+
+    const newFromYear  = isFrom ? year  : fromYear;
+    const newFromMonth = isFrom ? month : fromMonth;
+    const newToYear    = isFrom ? toYear  : year;
+    const newToMonth   = isFrom ? toMonth : month;
+
+    // Don't push to URL if From is after To
+    if (isFromAfterTo(newFromYear, newFromMonth, newToYear, newToMonth)) return;
+
+    if (month && year) pushParam(type, `${year}-${month}`);
+    else if (!month && !year) pushParam(type, '');
+  }
+
+  const dateRangeError = isFromAfterTo(fromYear, fromMonth, toYear, toMonth)
+    ? '"From" date cannot be after "To" date'
+    : null;
 
   return (
     <div className="bg-white border border-border rounded-2xl shadow-sm">
@@ -219,6 +301,64 @@ export default function JobFiltersPanel({ categories }: JobFiltersPanelProps) {
               onChange={(e) => handleBudgetChange('budget_max', e.target.value)}
             />
           </div>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium text-ink">Posted date</label>
+          {(['from', 'to'] as const).map((type) => {
+            const key = type === 'from' ? 'date_from' : 'date_to';
+            const month = type === 'from' ? fromMonth : toMonth;
+            const year  = type === 'from' ? fromYear  : toYear;
+            const monthValue = MONTHS.find((m) => m.value === month) ?? null;
+            const yearOptions = YEARS.map((y) => ({ value: String(y), label: String(y) }));
+            const yearValue = yearOptions.find((y) => y.value === year) ?? null;
+            const hasError = dateRangeError !== null;
+            return (
+              <div key={type} className="flex items-center gap-2">
+                <span className={`text-xs font-medium w-7 shrink-0 ${hasError ? 'text-red-500' : 'text-muted'}`}>
+                  {type === 'from' ? 'From' : 'To'}
+                </span>
+                <div className="flex-1">
+                  <ReactSelect<Option, false>
+                    options={MONTHS}
+                    value={monthValue}
+                    onChange={(opt) => handleDateChange(key, 'month', opt?.value ?? '')}
+                    placeholder="Month"
+                    isSearchable={false}
+                    isClearable={false}
+                    styles={hasError ? {
+                      ...dateSelectStyles,
+                      control: (base, state) => ({ ...(dateSelectStyles.control as Function)(base, state), borderColor: '#ef4444' }),
+                    } : dateSelectStyles}
+                    instanceId={`${type}-month`}
+                  />
+                </div>
+                <div className="w-24 shrink-0">
+                  <ReactSelect<Option, false>
+                    options={yearOptions}
+                    value={yearValue}
+                    onChange={(opt) => handleDateChange(key, 'year', opt?.value ?? '')}
+                    placeholder="Year"
+                    isSearchable={false}
+                    isClearable={false}
+                    styles={hasError ? {
+                      ...dateSelectStyles,
+                      control: (base, state) => ({ ...(dateSelectStyles.control as Function)(base, state), borderColor: '#ef4444' }),
+                    } : dateSelectStyles}
+                    instanceId={`${type}-year`}
+                  />
+                </div>
+              </div>
+            );
+          })}
+          {dateRangeError && (
+            <p className="text-xs text-red-500 flex items-center gap-1">
+              <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              </svg>
+              "From" must be before "To"
+            </p>
+          )}
         </div>
 
         <div className="flex flex-col gap-1.5">

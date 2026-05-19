@@ -19,6 +19,8 @@ class JobIndexRequest extends FormRequest
             'budget_min' => ['nullable', 'numeric', 'min:0'],
             'budget_max' => ['nullable', 'numeric', 'min:0'],
             'sort' => ['nullable', 'string', 'in:newest,highest_budget'],
+            'date_from' => ['nullable', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'],
+            'date_to'   => ['nullable', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'],
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
         ];

@@ -72,6 +72,9 @@ class JobSeeder extends Seeder
                 continue;
             }
 
+            // Spread jobs across the last 6 months so date filters have real variety
+            $createdAt = now()->subDays(rand(0, 180));
+
             Job::create([
                 'category_id' => $category->id,
                 'title' => $jobData['title'],
@@ -80,11 +83,13 @@ class JobSeeder extends Seeder
                 'description' => "## About the Role\n\nWe need a skilled accounting professional to help us with {$jobData['title']}.\n\n## Responsibilities\n\n- Complete the assigned accounting tasks accurately and on time\n- Communicate progress and flag any issues proactively\n- Deliver clean, documented work product\n\n## Requirements\n\n- Proven experience in relevant accounting discipline\n- Strong attention to detail\n- Excellent communication skills",
                 'budget_min' => $jobData['budget_min'],
                 'budget_max' => $jobData['budget_max'],
-                'deadline' => now()->addDays(rand(14, 180))->format('Y-m-d'),
+                'deadline' => $createdAt->copy()->addDays(rand(14, 180))->format('Y-m-d'),
                 'expected_delivery_time' => $deliveryTimes[$i % count($deliveryTimes)],
                 'required_skills' => $skills[$jobData['category']] ?? ['Accounting', 'Excel', 'GAAP'],
                 'attachments' => null,
                 'status' => $jobData['status'],
+                'created_at' => $createdAt,
+                'updated_at' => $createdAt,
             ]);
         }
     }

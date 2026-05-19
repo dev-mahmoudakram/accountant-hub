@@ -21,13 +21,12 @@ export default function JobsContent() {
 
   const [jobs, setJobs] = useState<JobListItem[] | null>(null);
   const [categories, setCategories] = useState<JobCategory[]>([]);
+  const [years, setYears] = useState<number[]>([]);
   const [meta, setMeta] = useState({ currentPage: 1, lastPage: 1, total: 0 });
 
   useEffect(() => {
-    api
-      .get<ApiResponse<JobCategory[]>>('/categories')
-      .then((r) => setCategories(r.data))
-      .catch(() => {});
+    api.get<ApiResponse<JobCategory[]>>('/categories').then((r) => setCategories(r.data)).catch(() => {});
+    api.get<ApiResponse<number[]>>('/jobs/years').then((r) => setYears(r.data)).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -83,7 +82,7 @@ export default function JobsContent() {
           {/* Filters sidebar */}
           <aside className="w-full lg:w-72 shrink-0">
             <div className="sticky top-24">
-              <JobFiltersPanel categories={categories} />
+              <JobFiltersPanel categories={categories} years={years} />
             </div>
           </aside>
 

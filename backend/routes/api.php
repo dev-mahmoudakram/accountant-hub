@@ -25,4 +25,5 @@ Route::get('/categories', [CategoryController::class, 'index']);
 
 // Jobs
 Route::get('/jobs', [JobController::class, 'index']);
+Route::get('/jobs/years', [JobController::class, 'years']);
 Route::get('/jobs/{job}', [JobController::class, 'show']);

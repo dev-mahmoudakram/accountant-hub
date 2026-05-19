@@ -29,6 +29,17 @@ class JobController extends Controller
         ]);
     }
 
+    public function years(): JsonResponse
+    {
+        $years = Job::query()
+            ->selectRaw('YEAR(created_at) as year')
+            ->distinct()
+            ->orderBy('year')
+            ->pluck('year');
+
+        return response()->json(['success' => true, 'data' => $years]);
+    }
+
     public function show(Job $job, ShowJobAction $action): JsonResponse
     {
         $job = $action->execute($job);

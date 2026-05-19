@@ -6,6 +6,7 @@ use App\Http\Requests\JobIndexRequest;
 use App\Models\Job;
 use App\Models\JobCategory;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
 
 class JobQuery
 {
@@ -31,6 +32,14 @@ class JobQuery
 
         if ($budgetMax = $request->validated('budget_max')) {
             $query->where('budget_min', '<=', $budgetMax);
+        }
+
+        if ($dateFrom = $request->validated('date_from')) {
+            $query->whereDate('created_at', '>=', Carbon::createFromFormat('Y-m', $dateFrom)->startOfMonth());
+        }
+
+        if ($dateTo = $request->validated('date_to')) {
+            $query->whereDate('created_at', '<=', Carbon::createFromFormat('Y-m', $dateTo)->endOfMonth());
         }
 
         match ($request->validated('sort', 'newest')) {

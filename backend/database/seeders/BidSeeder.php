@@ -30,11 +30,44 @@ class BidSeeder extends Seeder
         ];
 
         $placedBids = [];
+        $deliveryTimes = collect(['1 week', '2 weeks', '3 weeks', '1 month']);
 
         foreach ($users as $user) {
-            $jobSample = $jobs->shuffle()->take(rand(3, 7));
+            // Guarantee one bid of each status per user
+            $guaranteed = [
+                BidStatus::Pending,
+                BidStatus::Accepted,
+                BidStatus::Rejected,
+            ];
 
-            foreach ($jobSample as $job) {
+            $shuffledJobs = $jobs->shuffle();
+            $usedJobs = collect();
+
+            foreach ($guaranteed as $index => $status) {
+                $job = $shuffledJobs->get($index);
+                if (! $job) {
+                    continue;
+                }
+
+                $key = "{$user->id}-{$job->id}";
+                $placedBids[$key] = true;
+                $usedJobs->push($job->id);
+
+                Bid::create([
+                    'user_id' => $user->id,
+                    'job_id' => $job->id,
+                    'proposed_price' => rand((int) $job->budget_min, (int) $job->budget_max),
+                    'estimated_delivery_time' => $deliveryTimes->random(),
+                    'cover_letter' => $coverLetters[array_rand($coverLetters)],
+                    'experience_summary' => $experienceSummaries[array_rand($experienceSummaries)],
+                    'status' => $status,
+                ]);
+            }
+
+            // Add a few extra random pending bids
+            $extras = $shuffledJobs->whereNotIn('id', $usedJobs->all())->take(rand(2, 4));
+
+            foreach ($extras as $job) {
                 $key = "{$user->id}-{$job->id}";
 
                 if (isset($placedBids[$key])) {
@@ -47,7 +80,7 @@ class BidSeeder extends Seeder
                     'user_id' => $user->id,
                     'job_id' => $job->id,
                     'proposed_price' => rand((int) $job->budget_min, (int) $job->budget_max),
-                    'estimated_delivery_time' => collect(['1 week', '2 weeks', '3 weeks', '1 month'])->random(),
+                    'estimated_delivery_time' => $deliveryTimes->random(),
                     'cover_letter' => $coverLetters[array_rand($coverLetters)],
                     'experience_summary' => $experienceSummaries[array_rand($experienceSummaries)],
                     'status' => BidStatus::Pending,
