@@ -15,6 +15,10 @@ class BidEligibilityService
             return 'This job is closed and no longer accepting bids.';
         }
 
+        if ($job->user_id === $user->id) {
+            return 'You cannot bid on your own job.';
+        }
+
         if (Bid::where('user_id', $user->id)->where('job_id', $job->id)->exists()) {
             return 'You have already submitted a bid for this job.';
         }

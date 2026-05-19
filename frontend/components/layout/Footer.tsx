@@ -1,8 +1,13 @@
+'use client';
+
 import Link from 'next/link';
 import Container from './Container';
+import { useAuth } from '@/components/auth/AuthProvider';
 
 export default function Footer() {
   const year = new Date().getFullYear();
+  const { isAuthenticated, user } = useAuth();
+  const isClient = user?.role === 'client';
 
   return (
     <footer className="border-t border-border bg-surface mt-auto">
@@ -38,21 +43,41 @@ export default function Footer() {
                   Browse Jobs
                 </Link>
               </li>
-              <li>
-                <Link href="/register" className="text-sm text-muted hover:text-brand transition-colors">
-                  Create Account
-                </Link>
-              </li>
-              <li>
-                <Link href="/login" className="text-sm text-muted hover:text-brand transition-colors">
-                  Sign In
-                </Link>
-              </li>
-              <li>
-                <Link href="/dashboard" className="text-sm text-muted hover:text-brand transition-colors">
-                  My Bids
-                </Link>
-              </li>
+              {!isAuthenticated && (
+                <>
+                  <li>
+                    <Link href="/register" className="text-sm text-muted hover:text-brand transition-colors">
+                      Create Account
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/login" className="text-sm text-muted hover:text-brand transition-colors">
+                      Sign In
+                    </Link>
+                  </li>
+                </>
+              )}
+              {isAuthenticated && !isClient && (
+                <li>
+                  <Link href="/dashboard" className="text-sm text-muted hover:text-brand transition-colors">
+                    My Bids
+                  </Link>
+                </li>
+              )}
+              {isAuthenticated && isClient && (
+                <>
+                  <li>
+                    <Link href="/client/jobs" className="text-sm text-muted hover:text-brand transition-colors">
+                      My Jobs
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/client/jobs/new" className="text-sm text-muted hover:text-brand transition-colors">
+                      Post a Job
+                    </Link>
+                  </li>
+                </>
+              )}
             </ul>
           </div>
 

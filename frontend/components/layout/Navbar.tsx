@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { useTopLoader } from 'nextjs-toploader';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/components/auth/AuthProvider';
 import Container from './Container';
@@ -10,7 +12,7 @@ import Button from '@/components/ui/Button';
 import { mobileMenuOverlay, mobileMenuDrawer } from '@/lib/animations';
 import { api } from '@/lib/api';
 import { ApiResponse } from '@/types/api';
-import { AuthResponse } from '@/types/user';
+import { AuthResponse, UserRole } from '@/types/user';
 
 function NavLink({
   href,
@@ -70,10 +72,12 @@ function PlusIcon() {
 
 export default function Navbar() {
   const { user, isAuthenticated, isReady, logout, login } = useAuth();
+  const loader = useTopLoader();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [switching, setSwitching] = useState(false);
+  const [pendingRole, setPendingRole] = useState<UserRole | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -102,14 +106,27 @@ export default function Navbar() {
     closeTimer.current = setTimeout(() => setDropdownOpen(false), 150);
   }
 
+  // Navigate only once the auth context actually reflects the new role,
+  // so the destination page's role guard never sees stale state.
+  useEffect(() => {
+    if (!pendingRole || user?.role !== pendingRole) return;
+    router.push(pendingRole === 'client' ? '/client/jobs' : '/jobs');
+    setPendingRole(null);
+    setSwitching(false);
+  }, [pendingRole, user?.role, router]);
+
   async function handleSwitchRole() {
+    const target = otherRole;
     setSwitching(true);
+    loader.start();
     try {
-      const res = await api.post<ApiResponse<AuthResponse>>('/switch-role', { role: otherRole });
-      login(res.data.token, res.data.user);
+      const res = await api.post<ApiResponse<AuthResponse>>('/switch-role', { role: target });
       setDropdownOpen(false);
-      router.push(otherRole === 'client' ? '/client/jobs' : '/jobs');
-    } finally {
+      setPendingRole(target);
+      login(res.data.token, res.data.user);
+    } catch {
+      loader.done();
+      toast.error('Could not switch role. Please try again.');
       setSwitching(false);
     }
   }

@@ -54,13 +54,17 @@ class AuthController extends Controller
         $user = $request->user();
         $user->currentAccessToken()->delete();
 
-        $token = $user->createToken('api-token', [$request->role])->plainTextToken;
+        $newToken = $user->createToken('api-token', [$request->role]);
+
+        // Attach the new token so UserResource resolves the new role,
+        // not the old (now-deleted) token still held in memory.
+        $user->withAccessToken($newToken->accessToken);
 
         return response()->json([
             'success' => true,
             'data' => [
                 'user' => new UserResource($user),
-                'token' => $token,
+                'token' => $newToken->plainTextToken,
             ],
         ]);
     }
