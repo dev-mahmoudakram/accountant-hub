@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import ReactSelect, { StylesConfig } from 'react-select';
@@ -111,7 +111,7 @@ export default function PostJobForm({ initialData, jobId }: Props) {
     control,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
-    resolver: zodResolver(schema),
+    resolver: standardSchemaResolver(schema),
     defaultValues: initialData
       ? {
           category_id: initialData.category.id,
