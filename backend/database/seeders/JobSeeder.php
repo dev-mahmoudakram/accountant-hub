@@ -75,7 +75,7 @@ class JobSeeder extends Seeder
             // Spread jobs across the last 6 months so date filters have real variety
             $createdAt = now()->subDays(rand(0, 180));
 
-            Job::create([
+            $job = new Job([
                 'category_id' => $category->id,
                 'title' => $jobData['title'],
                 'company_name' => $companies[$i % count($companies)],
@@ -88,9 +88,12 @@ class JobSeeder extends Seeder
                 'required_skills' => $skills[$jobData['category']] ?? ['Accounting', 'Excel', 'GAAP'],
                 'attachments' => null,
                 'status' => $jobData['status'],
-                'created_at' => $createdAt,
-                'updated_at' => $createdAt,
             ]);
+
+            // Assign timestamps directly so Eloquent doesn't overwrite with now()
+            $job->created_at = $createdAt;
+            $job->updated_at = $createdAt;
+            $job->save();
         }
     }
 }

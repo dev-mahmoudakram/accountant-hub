@@ -116,6 +116,7 @@ const dateSelectStyles: StylesConfig<Option, false> = {
   input: (base) => ({ ...base, color: '#0a0a0a', fontSize: '0.8125rem', margin: 0, padding: 0 }),
   valueContainer: (base) => ({ ...base, padding: '0 10px' }),
   dropdownIndicator: (base) => ({ ...base, color: '#9ca3af', padding: '0 6px', '&:hover': { color: '#6b7280' } }),
+  menuPortal: (base) => ({ ...base, zIndex: 9999 }),
 };
 
 export default function JobFiltersPanel({ categories, years }: JobFiltersPanelProps) {
@@ -326,9 +327,12 @@ export default function JobFiltersPanel({ categories, years }: JobFiltersPanelPr
                     placeholder="Month"
                     isSearchable={false}
                     isClearable={false}
+                    menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                    menuPosition="fixed"
                     styles={hasError ? {
                       ...dateSelectStyles,
                       control: (base, state) => ({ ...(dateSelectStyles.control as Function)(base, state), borderColor: '#ef4444' }),
+                      menuPortal: (base) => ({ ...base, zIndex: 9999 }),
                     } : dateSelectStyles}
                     instanceId={`${type}-month`}
                   />
@@ -341,9 +345,12 @@ export default function JobFiltersPanel({ categories, years }: JobFiltersPanelPr
                     placeholder="Year"
                     isSearchable={false}
                     isClearable={false}
+                    menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                    menuPosition="fixed"
                     styles={hasError ? {
                       ...dateSelectStyles,
                       control: (base, state) => ({ ...(dateSelectStyles.control as Function)(base, state), borderColor: '#ef4444' }),
+                      menuPortal: (base) => ({ ...base, zIndex: 9999 }),
                     } : dateSelectStyles}
                     instanceId={`${type}-year`}
                   />
