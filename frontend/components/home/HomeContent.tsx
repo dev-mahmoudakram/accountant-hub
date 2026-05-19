@@ -412,7 +412,7 @@ export default function HomeContent() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: '-60px' }}
-            className="grid grid-cols-2 md:grid-cols-3 gap-4"
+            className="grid grid-cols-1 md:grid-cols-3 gap-4"
           >
             {CATEGORIES.map(({ slug, label, count, icon }) => (
               <motion.div key={slug} variants={fadeUp}>
