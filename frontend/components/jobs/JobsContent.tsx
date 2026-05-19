@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Container from '@/components/layout/Container';
@@ -17,9 +17,8 @@ import { staggerContainer, fadeUp } from '@/lib/animations';
 export default function JobsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-
   const [jobs, setJobs] = useState<JobListItem[] | null>(null);
+  const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<JobCategory[]>([]);
   const [years, setYears] = useState<number[]>([]);
   const [meta, setMeta] = useState({ currentPage: 1, lastPage: 1, total: 0 });
@@ -32,7 +31,8 @@ export default function JobsContent() {
   useEffect(() => {
     let cancelled = false;
 
-    startTransition(async () => {
+    async function fetchJobs() {
+      setLoading(true);
       const params: Record<string, string | number> = {};
       searchParams.forEach((value, key) => {
         if (value) params[key] = value;
@@ -51,8 +51,12 @@ export default function JobsContent() {
         }
       } catch {
         if (!cancelled) setJobs([]);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    });
+    }
+
+    fetchJobs();
 
     return () => { cancelled = true; };
   }, [searchParams]);
@@ -63,7 +67,7 @@ export default function JobsContent() {
     router.push(`/jobs?${params.toString()}`);
   }
 
-  const isLoading = jobs === null || isPending;
+  const isLoading = jobs === null || loading;
 
   return (
     <div className="py-10 lg:py-12">
