@@ -13,7 +13,6 @@ import { ApiResponse, PaginatedResponse } from '@/types/api';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Button from '@/components/ui/Button';
-import Alert from '@/components/ui/Alert';
 import AttachmentDropzone from '@/components/client/AttachmentDropzone';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -101,7 +100,6 @@ interface Props {
 export default function PostJobForm({ initialData, jobId }: Props) {
   const router = useRouter();
   const [categories, setCategories] = useState<JobCategory[]>([]);
-  const [serverError, setServerError] = useState<string | null>(null);
   const [skillInput, setSkillInput] = useState('');
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 
@@ -110,6 +108,7 @@ export default function PostJobForm({ initialData, jobId }: Props) {
   const {
     register,
     handleSubmit,
+    setError,
     control,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
@@ -157,7 +156,6 @@ export default function PostJobForm({ initialData, jobId }: Props) {
   // ─── Submit ──────────────────────────────────────────────────────────────
 
   async function onSubmit(data: FormValues) {
-    setServerError(null);
     const payload = { ...data, required_skills: data.required_skills.map((s) => s.value) };
 
     try {
@@ -179,9 +177,15 @@ export default function PostJobForm({ initialData, jobId }: Props) {
     } catch (err: unknown) {
       const error = err as { status?: number; message?: string; errors?: Record<string, string[]> };
       if (error.status === 422 && error.errors) {
-        setServerError(Object.values(error.errors).flat().join(' '));
+        // Set each field's error inline so users see what's wrong next to the input,
+        // and surface a short toast so they notice even when scrolled to the bottom.
+        Object.entries(error.errors).forEach(([field, messages]) => {
+          setError(field as keyof FormValues, { message: messages[0] });
+        });
+        const firstMessage = Object.values(error.errors).flat()[0];
+        toast.error(firstMessage ?? 'Please review the highlighted fields and try again.');
       } else {
-        setServerError(error.message ?? 'Something went wrong. Please try again.');
+        toast.error(error.message ?? 'Something went wrong. Please try again.');
       }
     }
   }
@@ -195,8 +199,6 @@ export default function PostJobForm({ initialData, jobId }: Props) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      {serverError && <Alert variant="error">{serverError}</Alert>}
-
       {/* ── Job Details ─────────────────────────────────────────────────── */}
       <div className="bg-white border border-border rounded-2xl p-6 space-y-5">
         <h2 className="text-base font-semibold text-ink">Job Details</h2>
