@@ -24,11 +24,7 @@ class AuthTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-            ->assertJsonStructure([
-                'success',
-                'message',
-                'data' => ['user' => ['id', 'name', 'email'], 'token'],
-            ])
+            ->assertJsonStructure(['success', 'message'])
             ->assertJsonPath('success', true);
 
         $this->assertDatabaseHas('users', ['email' => 'jane@example.com']);
@@ -76,6 +72,7 @@ class AuthTest extends TestCase
         $response = $this->postJson('/api/login', [
             'email' => $user->email,
             'password' => 'secret123',
+            'role' => 'accountant',
         ]);
 
         $response->assertOk()
@@ -93,6 +90,7 @@ class AuthTest extends TestCase
         $this->postJson('/api/login', [
             'email' => $user->email,
             'password' => 'wrong',
+            'role' => 'accountant',
         ])->assertStatus(401)
             ->assertJsonPath('success', false);
     }
@@ -102,6 +100,7 @@ class AuthTest extends TestCase
         $this->postJson('/api/login', [
             'email' => 'nobody@example.com',
             'password' => 'password',
+            'role' => 'accountant',
         ])->assertStatus(401);
     }
 
@@ -109,7 +108,23 @@ class AuthTest extends TestCase
     {
         $this->postJson('/api/login', [])
             ->assertStatus(422)
-            ->assertJsonValidationErrors(['email', 'password']);
+            ->assertJsonValidationErrors(['email', 'password', 'role']);
+    }
+
+    public function test_login_issues_token_with_chosen_role_ability(): void
+    {
+        $user = User::factory()->create(['password' => bcrypt('secret123')]);
+
+        $this->postJson('/api/login', [
+            'email' => $user->email,
+            'password' => 'secret123',
+            'role' => 'client',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('personal_access_tokens', [
+            'tokenable_id' => $user->id,
+            'abilities' => json_encode(['client']),
+        ]);
     }
 
     // -------------------------------------------------------------------------

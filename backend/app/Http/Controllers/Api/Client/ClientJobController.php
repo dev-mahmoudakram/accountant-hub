@@ -56,7 +56,7 @@ class ClientJobController extends Controller
 
     public function update(UpdateJobRequest $request, Job $job, UpdateJobAction $action): JsonResponse
     {
-        $this->authorize('manage', $job);
+        $this->authorize('update', $job);
 
         $job = $action->execute($request, $job);
         $job->loadCount('bids');

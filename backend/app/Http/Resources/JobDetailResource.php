@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Bid;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -29,7 +30,9 @@ class JobDetailResource extends JsonResource
             'bids_count' => $this->bids_count ?? 0,
             'user_has_bid' => $this->when(
                 auth('sanctum')->check(),
-                fn () => $this->bids->contains('user_id', auth('sanctum')->id())
+                fn () => Bid::where('user_id', auth('sanctum')->id())
+                    ->where('job_id', $this->id)
+                    ->exists()
             ),
             'category' => new JobCategoryResource($this->whenLoaded('category')),
             'poster' => $this->whenLoaded('poster', fn () => [

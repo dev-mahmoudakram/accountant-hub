@@ -2,6 +2,7 @@
 
 namespace App\Queries;
 
+use App\Enums\JobStatus;
 use App\Http\Requests\JobIndexRequest;
 use App\Models\Job;
 use App\Models\JobCategory;
@@ -15,6 +16,14 @@ class JobQuery
         $query = Job::query()
             ->with(['category', 'poster'])
             ->withCount('bids');
+
+        // Status filter — default to open jobs only; pass status=all to include closed.
+        $status = $request->validated('status', 'open');
+        if ($status === 'open') {
+            $query->where('status', JobStatus::Open);
+        } elseif ($status === 'closed') {
+            $query->where('status', JobStatus::Closed);
+        }
 
         if ($search = $request->validated('search')) {
             $query->where('title', 'like', '%'.$search.'%');

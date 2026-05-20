@@ -45,7 +45,7 @@ class JobsTest extends TestCase
 
     public function test_jobs_can_be_listed(): void
     {
-        Job::factory()->count(5)->create();
+        Job::factory()->open()->count(5)->create();
 
         $response = $this->getJson('/api/jobs');
 
@@ -71,10 +71,47 @@ class JobsTest extends TestCase
             ->assertJsonCount(0, 'data');
     }
 
+    public function test_jobs_listing_defaults_to_open_only(): void
+    {
+        Job::factory()->open()->count(3)->create();
+        Job::factory()->closed()->count(2)->create();
+
+        $this->getJson('/api/jobs')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 3);
+    }
+
+    public function test_jobs_listing_can_show_closed_only(): void
+    {
+        Job::factory()->open()->count(3)->create();
+        Job::factory()->closed()->count(2)->create();
+
+        $this->getJson('/api/jobs?status=closed')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 2);
+    }
+
+    public function test_jobs_listing_can_show_all_statuses(): void
+    {
+        Job::factory()->open()->count(3)->create();
+        Job::factory()->closed()->count(2)->create();
+
+        $this->getJson('/api/jobs?status=all')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 5);
+    }
+
+    public function test_jobs_listing_rejects_invalid_status(): void
+    {
+        $this->getJson('/api/jobs?status=invalid')
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['status']);
+    }
+
     public function test_jobs_can_be_searched_by_title(): void
     {
-        Job::factory()->create(['title' => 'Senior Tax Accountant']);
-        Job::factory()->create(['title' => 'Bookkeeping Services']);
+        Job::factory()->open()->create(['title' => 'Senior Tax Accountant']);
+        Job::factory()->open()->create(['title' => 'Bookkeeping Services']);
 
         $this->getJson('/api/jobs?search=Tax')
             ->assertOk()
@@ -87,8 +124,8 @@ class JobsTest extends TestCase
         $tax = JobCategory::factory()->create(['slug' => 'tax-preparation']);
         $bookkeeping = JobCategory::factory()->create(['slug' => 'bookkeeping']);
 
-        Job::factory()->count(2)->create(['category_id' => $tax->id]);
-        Job::factory()->count(3)->create(['category_id' => $bookkeeping->id]);
+        Job::factory()->open()->count(2)->create(['category_id' => $tax->id]);
+        Job::factory()->open()->count(3)->create(['category_id' => $bookkeeping->id]);
 
         $this->getJson('/api/jobs?category=tax-preparation')
             ->assertOk()
@@ -97,9 +134,9 @@ class JobsTest extends TestCase
 
     public function test_jobs_can_be_filtered_by_budget_range(): void
     {
-        Job::factory()->create(['budget_min' => 500, 'budget_max' => 1000]);
-        Job::factory()->create(['budget_min' => 2000, 'budget_max' => 4000]);
-        Job::factory()->create(['budget_min' => 5000, 'budget_max' => 8000]);
+        Job::factory()->open()->create(['budget_min' => 500, 'budget_max' => 1000]);
+        Job::factory()->open()->create(['budget_min' => 2000, 'budget_max' => 4000]);
+        Job::factory()->open()->create(['budget_min' => 5000, 'budget_max' => 8000]);
 
         $this->getJson('/api/jobs?budget_min=1500&budget_max=5000')
             ->assertOk()
@@ -108,8 +145,8 @@ class JobsTest extends TestCase
 
     public function test_jobs_can_be_sorted_by_newest(): void
     {
-        $old = Job::factory()->create(['created_at' => now()->subDays(10)]);
-        $new = Job::factory()->create(['created_at' => now()]);
+        Job::factory()->open()->create(['created_at' => now()->subDays(10)]);
+        $new = Job::factory()->open()->create(['created_at' => now()]);
 
         $response = $this->getJson('/api/jobs?sort=newest')->assertOk();
 
@@ -118,8 +155,8 @@ class JobsTest extends TestCase
 
     public function test_jobs_can_be_sorted_by_highest_budget(): void
     {
-        Job::factory()->create(['budget_max' => 1000]);
-        $highest = Job::factory()->create(['budget_max' => 9000]);
+        Job::factory()->open()->create(['budget_max' => 1000]);
+        $highest = Job::factory()->open()->create(['budget_max' => 9000]);
 
         $response = $this->getJson('/api/jobs?sort=highest_budget')->assertOk();
 
@@ -128,7 +165,7 @@ class JobsTest extends TestCase
 
     public function test_jobs_listing_is_paginated(): void
     {
-        Job::factory()->count(20)->create();
+        Job::factory()->open()->count(20)->create();
 
         $this->getJson('/api/jobs?per_page=5')
             ->assertOk()

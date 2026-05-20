@@ -7,6 +7,7 @@ use App\Models\Bid;
 use App\Models\Job;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class BidsTest extends TestCase
@@ -29,8 +30,9 @@ class BidsTest extends TestCase
         $user = User::factory()->create();
         $job = Job::factory()->create(['status' => JobStatus::Open]);
 
-        $this->actingAs($user, 'sanctum')
-            ->postJson("/api/jobs/{$job->id}/bids", $this->validBid)
+        Sanctum::actingAs($user, ['accountant']);
+
+        $this->postJson("/api/jobs/{$job->id}/bids", $this->validBid)
             ->assertStatus(201)
             ->assertJsonPath('success', true)
             ->assertJsonPath('message', 'Bid submitted successfully.')
@@ -56,8 +58,9 @@ class BidsTest extends TestCase
         $user = User::factory()->create();
         $job = Job::factory()->create(['status' => JobStatus::Closed]);
 
-        $this->actingAs($user, 'sanctum')
-            ->postJson("/api/jobs/{$job->id}/bids", $this->validBid)
+        Sanctum::actingAs($user, ['accountant']);
+
+        $this->postJson("/api/jobs/{$job->id}/bids", $this->validBid)
             ->assertStatus(409)
             ->assertJsonPath('success', false);
     }
@@ -69,8 +72,9 @@ class BidsTest extends TestCase
 
         Bid::factory()->create(['user_id' => $user->id, 'job_id' => $job->id]);
 
-        $this->actingAs($user, 'sanctum')
-            ->postJson("/api/jobs/{$job->id}/bids", $this->validBid)
+        Sanctum::actingAs($user, ['accountant']);
+
+        $this->postJson("/api/jobs/{$job->id}/bids", $this->validBid)
             ->assertStatus(409)
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', 'You have already submitted a bid for this job.');
@@ -81,8 +85,9 @@ class BidsTest extends TestCase
         $user = User::factory()->create();
         $job = Job::factory()->create(['status' => JobStatus::Open]);
 
-        $this->actingAs($user, 'sanctum')
-            ->postJson("/api/jobs/{$job->id}/bids", [])
+        Sanctum::actingAs($user, ['accountant']);
+
+        $this->postJson("/api/jobs/{$job->id}/bids", [])
             ->assertStatus(422)
             ->assertJsonValidationErrors([
                 'proposed_price',
@@ -97,8 +102,9 @@ class BidsTest extends TestCase
         $user = User::factory()->create();
         $job = Job::factory()->create(['status' => JobStatus::Open]);
 
-        $this->actingAs($user, 'sanctum')
-            ->postJson("/api/jobs/{$job->id}/bids", array_merge($this->validBid, [
+        Sanctum::actingAs($user, ['accountant']);
+
+        $this->postJson("/api/jobs/{$job->id}/bids", array_merge($this->validBid, [
                 'proposed_price' => 'not-a-number',
             ]))
             ->assertStatus(422)
@@ -109,8 +115,9 @@ class BidsTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $this->actingAs($user, 'sanctum')
-            ->postJson('/api/jobs/999/bids', $this->validBid)
+        Sanctum::actingAs($user, ['accountant']);
+
+        $this->postJson('/api/jobs/999/bids', $this->validBid)
             ->assertNotFound();
     }
 
@@ -123,8 +130,9 @@ class BidsTest extends TestCase
         $user = User::factory()->create();
         Bid::factory()->count(3)->create(['user_id' => $user->id]);
 
-        $this->actingAs($user, 'sanctum')
-            ->getJson('/api/my-bids')
+        Sanctum::actingAs($user, ['accountant']);
+
+        $this->getJson('/api/my-bids')
             ->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('meta.total', 3)
@@ -139,8 +147,9 @@ class BidsTest extends TestCase
         Bid::factory()->count(4)->create(['user_id' => $userA->id]);
         Bid::factory()->count(2)->create(['user_id' => $userB->id]);
 
-        $this->actingAs($userA, 'sanctum')
-            ->getJson('/api/my-bids')
+        Sanctum::actingAs($userA, ['accountant']);
+
+        $this->getJson('/api/my-bids')
             ->assertOk()
             ->assertJsonPath('meta.total', 4);
     }
@@ -149,8 +158,9 @@ class BidsTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $this->actingAs($user, 'sanctum')
-            ->getJson('/api/my-bids')
+        Sanctum::actingAs($user, ['accountant']);
+
+        $this->getJson('/api/my-bids')
             ->assertOk()
             ->assertJsonPath('meta.total', 0)
             ->assertJsonCount(0, 'data');

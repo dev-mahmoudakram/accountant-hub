@@ -8,6 +8,6 @@ class ShowJobAction
 {
     public function execute(Job $job): Job
     {
-        return $job->loadCount('bids')->load('category', 'bids', 'poster');
+        return $job->loadCount('bids')->load('category', 'poster');
     }
 }

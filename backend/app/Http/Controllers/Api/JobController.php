@@ -32,10 +32,11 @@ class JobController extends Controller
     public function years(): JsonResponse
     {
         $years = Job::query()
-            ->selectRaw('YEAR(created_at) as year')
-            ->distinct()
-            ->orderBy('year')
-            ->pluck('year');
+            ->pluck('created_at')
+            ->map(fn ($d) => (int) $d->format('Y'))
+            ->unique()
+            ->sort()
+            ->values();
 
         return response()->json(['success' => true, 'data' => $years]);
     }

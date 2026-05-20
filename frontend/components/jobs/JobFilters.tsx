@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ReactSelect, { MultiValue, StylesConfig } from 'react-select';
 import Input from '@/components/ui/Input';
@@ -20,6 +20,12 @@ interface JobFiltersPanelProps {
 const SORT_OPTIONS: Option[] = [
   { value: 'newest', label: 'Newest first' },
   { value: 'highest_budget', label: 'Highest budget' },
+];
+
+const STATUS_OPTIONS: Option[] = [
+  { value: 'open', label: 'Open jobs only' },
+  { value: 'closed', label: 'Closed jobs only' },
+  { value: 'all', label: 'All jobs' },
 ];
 
 const sharedControlStyles = {
@@ -122,10 +128,13 @@ const dateSelectStyles: StylesConfig<Option, false> = {
 export default function JobFiltersPanel({ categories, years }: JobFiltersPanelProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const budgetMinDebounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const budgetMaxDebounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const categoryParam = searchParams.get('category') ?? '';
   const sort = searchParams.get('sort') ?? 'newest';
+  const status = searchParams.get('status') ?? 'open';
   const urlSearch = searchParams.get('search') ?? '';
   const urlBudgetMin = searchParams.get('budget_min') ?? '';
   const urlBudgetMax = searchParams.get('budget_max') ?? '';
@@ -133,40 +142,33 @@ export default function JobFiltersPanel({ categories, years }: JobFiltersPanelPr
   const urlDateTo = searchParams.get('date_to') ?? '';
 
   const [search, setSearch] = useState(urlSearch);
-  const [committedSearch, setCommittedSearch] = useState(urlSearch);
-  if (committedSearch !== urlSearch) { setCommittedSearch(urlSearch); setSearch(urlSearch); }
-
   const [budgetMin, setBudgetMin] = useState(urlBudgetMin);
-  const [committedBudgetMin, setCommittedBudgetMin] = useState(urlBudgetMin);
-  if (committedBudgetMin !== urlBudgetMin) { setCommittedBudgetMin(urlBudgetMin); setBudgetMin(urlBudgetMin); }
-
   const [budgetMax, setBudgetMax] = useState(urlBudgetMax);
-  const [committedBudgetMax, setCommittedBudgetMax] = useState(urlBudgetMax);
-  if (committedBudgetMax !== urlBudgetMax) { setCommittedBudgetMax(urlBudgetMax); setBudgetMax(urlBudgetMax); }
-
   const [fromMonth, setFromMonth] = useState(() => urlDateFrom.split('-')[1] ?? '');
   const [fromYear,  setFromYear]  = useState(() => urlDateFrom.split('-')[0] ?? '');
   const [toMonth,   setToMonth]   = useState(() => urlDateTo.split('-')[1] ?? '');
   const [toYear,    setToYear]    = useState(() => urlDateTo.split('-')[0] ?? '');
 
-  // Sync when URL changes externally (e.g. "Clear all")
-  const [committedDateFrom, setCommittedDateFrom] = useState(urlDateFrom);
-  if (committedDateFrom !== urlDateFrom) {
-    setCommittedDateFrom(urlDateFrom);
+  // Sync local state when the URL changes externally (e.g. "Clear all", back/forward).
+  useEffect(() => { setSearch(urlSearch); }, [urlSearch]);
+  useEffect(() => { setBudgetMin(urlBudgetMin); }, [urlBudgetMin]);
+  useEffect(() => { setBudgetMax(urlBudgetMax); }, [urlBudgetMax]);
+  useEffect(() => {
     setFromMonth(urlDateFrom.split('-')[1] ?? '');
     setFromYear(urlDateFrom.split('-')[0] ?? '');
-  }
-  const [committedDateTo, setCommittedDateTo] = useState(urlDateTo);
-  if (committedDateTo !== urlDateTo) {
-    setCommittedDateTo(urlDateTo);
+  }, [urlDateFrom]);
+  useEffect(() => {
     setToMonth(urlDateTo.split('-')[1] ?? '');
     setToYear(urlDateTo.split('-')[0] ?? '');
-  }
+  }, [urlDateTo]);
 
   function pushParam(key: string, value: string) {
     const base = new URLSearchParams(window.location.search);
     base.delete('page');
-    if (value && !(key === 'sort' && value === 'newest')) {
+    const isDefault =
+      (key === 'sort' && value === 'newest') ||
+      (key === 'status' && value === 'open');
+    if (value && !isDefault) {
       base.set(key, value);
     } else {
       base.delete(key);
@@ -176,15 +178,16 @@ export default function JobFiltersPanel({ categories, years }: JobFiltersPanelPr
 
   function handleSearchChange(value: string) {
     setSearch(value);
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => pushParam('search', value), 400);
+    clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => pushParam('search', value), 400);
   }
 
   function handleBudgetChange(key: 'budget_min' | 'budget_max', value: string) {
+    const ref = key === 'budget_min' ? budgetMinDebounceRef : budgetMaxDebounceRef;
     if (key === 'budget_min') setBudgetMin(value);
     else setBudgetMax(value);
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => pushParam(key, value), 600);
+    clearTimeout(ref.current);
+    ref.current = setTimeout(() => pushParam(key, value), 600);
   }
 
   function handleCategoryChange(selected: MultiValue<Option>) {
@@ -196,7 +199,8 @@ export default function JobFiltersPanel({ categories, years }: JobFiltersPanelPr
   const selectedSlugs = categoryParam ? categoryParam.split(',').filter(Boolean) : [];
   const categoryValue = categoryOptions.filter((o) => selectedSlugs.includes(o.value));
   const sortValue = SORT_OPTIONS.find((o) => o.value === sort) ?? SORT_OPTIONS[0];
-  const hasFilters = !!(urlSearch || categoryParam || urlBudgetMin || urlBudgetMax || urlDateFrom || urlDateTo || sort !== 'newest');
+  const statusValue = STATUS_OPTIONS.find((o) => o.value === status) ?? STATUS_OPTIONS[0];
+  const hasFilters = !!(urlSearch || categoryParam || urlBudgetMin || urlBudgetMax || urlDateFrom || urlDateTo || sort !== 'newest' || status !== 'open');
 
   const MONTHS = [
     { value: '01', label: 'January' }, { value: '02', label: 'February' },
@@ -366,6 +370,18 @@ export default function JobFiltersPanel({ categories, years }: JobFiltersPanelPr
               "From" must be before "To"
             </p>
           )}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-ink">Status</label>
+          <ReactSelect<Option, false>
+            options={STATUS_OPTIONS}
+            value={statusValue}
+            onChange={(option) => pushParam('status', option?.value ?? 'open')}
+            isSearchable={false}
+            styles={sortSelectStyles}
+            instanceId="status-select"
+          />
         </div>
 
         <div className="flex flex-col gap-1.5">

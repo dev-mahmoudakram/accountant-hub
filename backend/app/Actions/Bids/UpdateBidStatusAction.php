@@ -6,23 +6,26 @@ use App\Enums\BidStatus;
 use App\Enums\JobStatus;
 use App\Models\Bid;
 use App\Models\Job;
+use Illuminate\Support\Facades\DB;
 
 class UpdateBidStatusAction
 {
     public function execute(Bid $bid, BidStatus $status): Bid
     {
-        $bid->update(['status' => $status]);
+        return DB::transaction(function () use ($bid, $status) {
+            $bid->update(['status' => $status]);
 
-        // Auto-close the job and reject all other bids when a bid is accepted
-        if ($status === BidStatus::Accepted) {
-            Job::where('id', $bid->job_id)->update(['status' => JobStatus::Closed]);
+            // Auto-close the job and reject all other bids when a bid is accepted
+            if ($status === BidStatus::Accepted) {
+                Job::where('id', $bid->job_id)->update(['status' => JobStatus::Closed]);
 
-            Bid::where('job_id', $bid->job_id)
-                ->where('id', '!=', $bid->id)
-                ->where('status', BidStatus::Pending)
-                ->update(['status' => BidStatus::Rejected]);
-        }
+                Bid::where('job_id', $bid->job_id)
+                    ->where('id', '!=', $bid->id)
+                    ->where('status', BidStatus::Pending)
+                    ->update(['status' => BidStatus::Rejected]);
+            }
 
-        return $bid->refresh();
+            return $bid->refresh();
+        });
     }
 }

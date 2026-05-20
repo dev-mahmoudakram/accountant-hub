@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Job;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateJobRequest extends FormRequest
@@ -9,6 +10,30 @@ class UpdateJobRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    /**
+     * Fill missing budget fields from the existing job so that the
+     * `gte:budget_min` rule has both sides to compare on partial updates.
+     */
+    protected function prepareForValidation(): void
+    {
+        $job = $this->route('job');
+        if (! $job instanceof Job) {
+            return;
+        }
+
+        $fill = [];
+        if (! $this->has('budget_min') && $this->has('budget_max')) {
+            $fill['budget_min'] = (float) $job->budget_min;
+        }
+        if (! $this->has('budget_max') && $this->has('budget_min')) {
+            $fill['budget_max'] = (float) $job->budget_max;
+        }
+
+        if ($fill) {
+            $this->merge($fill);
+        }
     }
 
     public function rules(): array
