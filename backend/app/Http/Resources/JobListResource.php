@@ -20,6 +20,11 @@ class JobListResource extends JsonResource
             'expected_delivery_time' => $this->expected_delivery_time,
             'status' => $this->status->value,
             'bids_count' => $this->bids_count ?? 0,
+            'user_bid' => $this->when(
+                auth('sanctum')->check(),
+                // user_bid_status is loaded via a subquery in JobQuery when authed.
+                fn () => $this->user_bid_status ? ['status' => $this->user_bid_status] : null,
+            ),
             'category' => new JobCategoryResource($this->whenLoaded('category')),
             'poster' => $this->whenLoaded('poster', fn () => [
                 'id' => $this->poster->id,

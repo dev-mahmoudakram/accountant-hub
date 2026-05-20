@@ -22,6 +22,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:accountant')->group(function () {
         Route::post('/jobs/{job}/bids', [BidController::class, 'store']);
         Route::get('/my-bids', [MyBidController::class, 'index']);
+        Route::get('/my-bids/stats', [MyBidController::class, 'stats']);
+        Route::patch('/my-bids/{bid}', [MyBidController::class, 'update']);
+        Route::delete('/my-bids/{bid}', [MyBidController::class, 'destroy']);
     });
 
     // Client-only routes

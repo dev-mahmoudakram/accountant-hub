@@ -2,16 +2,22 @@
 
 namespace App\Actions\Bids;
 
+use App\Enums\BidStatus;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class ListMyBidsAction
 {
-    public function execute(User $user, int $perPage = 12): LengthAwarePaginator
+    public function execute(User $user, ?string $status, int $perPage = 12): LengthAwarePaginator
     {
-        return $user->bids()
+        $query = $user->bids()
             ->with(['job.category'])
-            ->orderByDesc('created_at')
-            ->paginate($perPage);
+            ->orderByDesc('created_at');
+
+        if ($status !== null && $status !== 'all') {
+            $query->where('status', BidStatus::from($status));
+        }
+
+        return $query->paginate($perPage);
     }
 }

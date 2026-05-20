@@ -231,7 +231,7 @@
                 { "key": "budget_min", "value": "", "disabled": true, "description": "Minimum budget" },
                 { "key": "budget_max", "value": "", "disabled": true, "description": "Maximum budget" },
                 { "key": "status", "value": "", "disabled": true, "description": "open, closed, or all. Defaults to open." },
-                { "key": "sort", "value": "newest", "disabled": true, "description": "newest or highest_budget" },
+                { "key": "sort", "value": "newest", "disabled": true, "description": "newest, highest_budget, or lowest_budget" },
                 { "key": "date_from", "value": "", "disabled": true, "description": "Filter from month, format: YYYY-MM" },
                 { "key": "date_to", "value": "", "disabled": true, "description": "Filter to month, format: YYYY-MM" },
                 { "key": "page", "value": "1", "disabled": true },
@@ -328,6 +328,23 @@
           }
         },
         {
+          "name": "List Jobs — Sort by Lowest Budget",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/jobs?sort=lowest_budget",
+              "host": ["{{base_url}}"],
+              "path": ["jobs"],
+              "query": [
+                { "key": "sort", "value": "lowest_budget" }
+              ]
+            }
+          }
+        },
+        {
           "name": "List Jobs — Filter by Status (closed)",
           "request": {
             "method": "GET",
@@ -414,10 +431,64 @@
               "host": ["{{base_url}}"],
               "path": ["my-bids"],
               "query": [
+                { "key": "status", "value": "", "disabled": true, "description": "pending, accepted, rejected, or all" },
                 { "key": "page", "value": "1", "disabled": true },
                 { "key": "per_page", "value": "12", "disabled": true }
               ]
             }
+          }
+        },
+        {
+          "name": "My Bids — Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/my-bids/stats",
+              "host": ["{{base_url}}"],
+              "path": ["my-bids", "stats"]
+            },
+            "description": "Returns the authenticated accountant's bid counts grouped by status: { total, pending, accepted, rejected }."
+          }
+        },
+        {
+          "name": "Update My Bid (pending only)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proposed_price\": 900,\n  \"cover_letter\": \"Updated cover letter with more detail about my approach to this specific accounting engagement.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/my-bids/1",
+              "host": ["{{base_url}}"],
+              "path": ["my-bids", "1"]
+            },
+            "description": "Partial update of the authenticated accountant's own pending bid. 403 if the bid has already been accepted or rejected. Same validation rules as Submit Bid (price within job's budget, delivery ≤ job's expected_delivery_time)."
+          }
+        },
+        {
+          "name": "Withdraw My Bid (pending only)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/my-bids/1",
+              "host": ["{{base_url}}"],
+              "path": ["my-bids", "1"]
+            },
+            "description": "Withdraws (deletes) the authenticated accountant's own pending bid. 403 if the bid has already been accepted or rejected."
           }
         }
       ]

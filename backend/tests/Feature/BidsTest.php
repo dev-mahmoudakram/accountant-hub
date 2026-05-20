@@ -273,4 +273,145 @@ class BidsTest extends TestCase
     {
         $this->getJson('/api/my-bids')->assertUnauthorized();
     }
+
+    // -------------------------------------------------------------------------
+    // My-bids stats
+    // -------------------------------------------------------------------------
+
+    public function test_my_bids_stats_returns_counts_by_status(): void
+    {
+        $user = User::factory()->create();
+
+        Bid::factory()->count(3)->create(['user_id' => $user->id, 'status' => \App\Enums\BidStatus::Pending]);
+        Bid::factory()->count(1)->create(['user_id' => $user->id, 'status' => \App\Enums\BidStatus::Accepted]);
+        Bid::factory()->count(2)->create(['user_id' => $user->id, 'status' => \App\Enums\BidStatus::Rejected]);
+
+        Sanctum::actingAs($user, ['accountant']);
+
+        $this->getJson('/api/my-bids/stats')
+            ->assertOk()
+            ->assertJsonPath('data.total', 6)
+            ->assertJsonPath('data.pending', 3)
+            ->assertJsonPath('data.accepted', 1)
+            ->assertJsonPath('data.rejected', 2);
+    }
+
+    public function test_my_bids_filtered_by_status(): void
+    {
+        $user = User::factory()->create();
+        Bid::factory()->count(2)->create(['user_id' => $user->id, 'status' => \App\Enums\BidStatus::Pending]);
+        Bid::factory()->count(1)->create(['user_id' => $user->id, 'status' => \App\Enums\BidStatus::Accepted]);
+
+        Sanctum::actingAs($user, ['accountant']);
+
+        $this->getJson('/api/my-bids?status=accepted')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1);
+    }
+
+    // -------------------------------------------------------------------------
+    // Update / withdraw pending bid
+    // -------------------------------------------------------------------------
+
+    public function test_user_can_withdraw_their_pending_bid(): void
+    {
+        $user = User::factory()->create();
+        $bid = Bid::factory()->create([
+            'user_id' => $user->id,
+            'status' => \App\Enums\BidStatus::Pending,
+        ]);
+
+        Sanctum::actingAs($user, ['accountant']);
+
+        $this->deleteJson("/api/my-bids/{$bid->id}")
+            ->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseMissing('bids', ['id' => $bid->id]);
+    }
+
+    public function test_user_cannot_withdraw_someone_elses_bid(): void
+    {
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        $bid = Bid::factory()->create(['user_id' => $owner->id]);
+
+        Sanctum::actingAs($other, ['accountant']);
+
+        $this->deleteJson("/api/my-bids/{$bid->id}")
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('bids', ['id' => $bid->id]);
+    }
+
+    public function test_user_cannot_withdraw_accepted_or_rejected_bid(): void
+    {
+        $user = User::factory()->create();
+        $accepted = Bid::factory()->create(['user_id' => $user->id, 'status' => \App\Enums\BidStatus::Accepted]);
+        $rejected = Bid::factory()->create(['user_id' => $user->id, 'status' => \App\Enums\BidStatus::Rejected]);
+
+        Sanctum::actingAs($user, ['accountant']);
+
+        $this->deleteJson("/api/my-bids/{$accepted->id}")->assertForbidden();
+        $this->deleteJson("/api/my-bids/{$rejected->id}")->assertForbidden();
+
+        $this->assertDatabaseHas('bids', ['id' => $accepted->id]);
+        $this->assertDatabaseHas('bids', ['id' => $rejected->id]);
+    }
+
+    public function test_user_can_update_their_pending_bid(): void
+    {
+        $user = User::factory()->create();
+        $job = Job::factory()->create(['budget_min' => 500, 'budget_max' => 5000, 'expected_delivery_time' => '3 months']);
+        $bid = Bid::factory()->create([
+            'user_id' => $user->id,
+            'job_id' => $job->id,
+            'status' => \App\Enums\BidStatus::Pending,
+            'proposed_price' => 1000,
+        ]);
+
+        Sanctum::actingAs($user, ['accountant']);
+
+        $this->patchJson("/api/my-bids/{$bid->id}", ['proposed_price' => 2000])
+            ->assertOk()
+            ->assertJsonPath('data.proposed_price', 2000);
+
+        $this->assertDatabaseHas('bids', [
+            'id' => $bid->id,
+            'proposed_price' => 2000,
+        ]);
+    }
+
+    public function test_user_cannot_update_accepted_bid(): void
+    {
+        $user = User::factory()->create();
+        $job = Job::factory()->create(['budget_min' => 500, 'budget_max' => 5000]);
+        $bid = Bid::factory()->create([
+            'user_id' => $user->id,
+            'job_id' => $job->id,
+            'status' => \App\Enums\BidStatus::Accepted,
+        ]);
+
+        Sanctum::actingAs($user, ['accountant']);
+
+        $this->patchJson("/api/my-bids/{$bid->id}", ['proposed_price' => 2000])
+            ->assertForbidden();
+    }
+
+    public function test_update_bid_validates_price_in_budget_range(): void
+    {
+        $user = User::factory()->create();
+        $job = Job::factory()->create(['budget_min' => 1000, 'budget_max' => 2000]);
+        $bid = Bid::factory()->create([
+            'user_id' => $user->id,
+            'job_id' => $job->id,
+            'status' => \App\Enums\BidStatus::Pending,
+        ]);
+
+        Sanctum::actingAs($user, ['accountant']);
+
+        $this->patchJson("/api/my-bids/{$bid->id}", ['proposed_price' => 5000])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['proposed_price']);
+    }
 }

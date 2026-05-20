@@ -7,6 +7,23 @@ interface JobCardProps {
   job: JobListItem;
 }
 
+function UserBidBadge({ status }: { status: 'pending' | 'accepted' | 'rejected' }) {
+  const map = {
+    pending: { label: 'Applied', cls: 'bg-brand-light text-brand border-brand/20' },
+    accepted: { label: 'Won', cls: 'bg-brand text-white border-brand' },
+    rejected: { label: 'Rejected', cls: 'bg-red-50 text-red-600 border-red-200' },
+  } as const;
+  const { label, cls } = map[status];
+  return (
+    <span
+      className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${cls}`}
+      title={`Your bid status: ${status}`}
+    >
+      {label}
+    </span>
+  );
+}
+
 export default function JobCard({ job }: JobCardProps) {
   return (
     <Link href={`/jobs/${job.id}`} className="group block h-full">
@@ -19,9 +36,12 @@ export default function JobCard({ job }: JobCardProps) {
           <span className="text-xs font-medium text-muted bg-surface border border-border px-2.5 py-1 rounded-full truncate max-w-35">
             {job.category?.name ?? 'Uncategorized'}
           </span>
-          <Badge variant={job.status} dot>
-            {job.status === 'open' ? 'Open' : 'Closed'}
-          </Badge>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {job.user_bid && <UserBidBadge status={job.user_bid.status} />}
+            <Badge variant={job.status} dot>
+              {job.status === 'open' ? 'Open' : 'Closed'}
+            </Badge>
+          </div>
         </div>
 
         {/* Title */}

@@ -33,9 +33,15 @@ class JobDetailResource extends JsonResource
                 function () {
                     $bid = Bid::where('user_id', auth('sanctum')->id())
                         ->where('job_id', $this->id)
-                        ->first(['status']);
+                        ->first(['id', 'status', 'proposed_price', 'estimated_delivery_time', 'created_at']);
 
-                    return $bid ? ['status' => $bid->status->value] : null;
+                    return $bid ? [
+                        'id' => $bid->id,
+                        'status' => $bid->status->value,
+                        'proposed_price' => (float) $bid->proposed_price,
+                        'estimated_delivery_time' => $bid->estimated_delivery_time,
+                        'created_at' => $bid->created_at->toISOString(),
+                    ] : null;
                 }
             ),
             'category' => new JobCategoryResource($this->whenLoaded('category')),

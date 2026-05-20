@@ -75,6 +75,8 @@ export default function JobDetailContent({ jobId }: JobDetailProps) {
     return () => { cancelled = true; };
   }, [jobId]);
 
+  const userBid = job?.user_bid ?? null;
+
   if (job === null || isPending) return <DetailSkeleton />;
 
   return (
@@ -309,15 +311,44 @@ export default function JobDetailContent({ jobId }: JobDetailProps) {
                   </div>
                 ) : bidStatus === 'accepted' ? (
                   <div className="space-y-3">
-                    <div className="bg-brand-light border border-brand/30 rounded-2xl p-5 text-center shadow-sm">
-                      <div className="w-10 h-10 rounded-full bg-brand flex items-center justify-center mx-auto mb-3 shadow-sm">
-                        <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}
-                            d="M5 13l4 4L19 7" />
-                        </svg>
+                    <div className="bg-brand-light border border-brand/30 rounded-2xl p-5 shadow-sm">
+                      <div className="text-center">
+                        <div className="w-10 h-10 rounded-full bg-brand flex items-center justify-center mx-auto mb-3 shadow-sm">
+                          <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}
+                              d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <p className="text-sm font-semibold text-brand">Bid Accepted!</p>
+                        <p className="text-xs text-muted mt-1">
+                          {job.poster?.name
+                            ? `${job.poster.name} has chosen your bid for this job.`
+                            : 'The client has chosen your bid for this job.'}
+                        </p>
                       </div>
-                      <p className="text-sm font-semibold text-brand">Bid Accepted!</p>
-                      <p className="text-xs text-muted mt-1">Congratulations — the client chose your bid for this job</p>
+
+                      {userBid && (
+                        <div className="mt-4 pt-4 border-t border-brand/20 space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted">Your price</span>
+                            <span className="font-semibold text-ink">
+                              ${userBid.proposed_price.toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted">Your delivery</span>
+                            <span className="font-semibold text-ink">{userBid.estimated_delivery_time}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="mt-4 pt-4 border-t border-brand/20">
+                        <p className="text-xs font-semibold text-ink mb-1.5">Next steps</p>
+                        <ul className="text-xs text-muted space-y-1 leading-relaxed list-disc pl-4">
+                          <li>The client will reach out with details to kick off the work.</li>
+                          <li>Deliver within your committed time of <span className="font-medium text-ink">{userBid?.estimated_delivery_time ?? job.expected_delivery_time}</span>.</li>
+                        </ul>
+                      </div>
                     </div>
                     <Link href="/dashboard" className="block">
                       <Button variant="primary" size="sm" className="w-full">

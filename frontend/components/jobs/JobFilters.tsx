@@ -20,6 +20,7 @@ interface JobFiltersPanelProps {
 const SORT_OPTIONS: Option[] = [
   { value: 'newest', label: 'Newest first' },
   { value: 'highest_budget', label: 'Highest budget' },
+  { value: 'lowest_budget', label: 'Lowest budget' },
 ];
 
 const STATUS_OPTIONS: Option[] = [

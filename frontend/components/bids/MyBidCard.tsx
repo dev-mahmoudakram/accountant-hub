@@ -5,6 +5,9 @@ import { formatCurrency, formatDate, formatRelative } from '@/lib/formatters';
 
 interface MyBidCardProps {
   bid: Bid;
+  onChanged?: () => void;
+  onEdit?: (bid: Bid) => void;
+  onWithdraw?: (bid: Bid) => void;
 }
 
 const STATUS_LABEL: Record<BidStatus, string> = {
@@ -13,7 +16,7 @@ const STATUS_LABEL: Record<BidStatus, string> = {
   rejected: 'Rejected',
 };
 
-export default function MyBidCard({ bid }: MyBidCardProps) {
+export default function MyBidCard({ bid, onEdit, onWithdraw }: MyBidCardProps) {
   return (
     <article className="group bg-white border border-border rounded-2xl overflow-hidden hover:border-brand/30 hover:shadow-lg transition-all duration-300 h-full flex flex-col">
       {/* Status accent bar */}
@@ -77,6 +80,30 @@ export default function MyBidCard({ bid }: MyBidCardProps) {
             </span>
             <span>{formatRelative(bid.created_at)}</span>
           </div>
+
+          {/* Actions — only available while pending */}
+          {bid.status === 'pending' && (onEdit || onWithdraw) && (
+            <div className="flex gap-2 pt-2 border-t border-border/60">
+              {onEdit && (
+                <button
+                  type="button"
+                  onClick={() => onEdit(bid)}
+                  className="flex-1 text-xs font-semibold text-brand hover:text-brand-dark px-3 py-2 rounded-lg border border-brand/30 hover:bg-brand-light/60 transition-colors focus-visible:outline-none"
+                >
+                  Edit
+                </button>
+              )}
+              {onWithdraw && (
+                <button
+                  type="button"
+                  onClick={() => onWithdraw(bid)}
+                  className="flex-1 text-xs font-semibold text-red-500 hover:text-red-600 px-3 py-2 rounded-lg border border-red-200 hover:bg-red-50 transition-colors focus-visible:outline-none"
+                >
+                  Withdraw
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </article>

@@ -22,6 +22,11 @@ export interface JobListItem {
   expected_delivery_time: string;
   status: JobStatus;
   bids_count: number;
+  /**
+   * Only present when the request is authenticated.
+   * `null` if the user hasn't bid; otherwise contains the bid's status.
+   */
+  user_bid?: { status: 'pending' | 'accepted' | 'rejected' } | null;
   category: JobCategory;
   poster?: JobPoster;
   created_at: string;
@@ -33,9 +38,17 @@ export interface JobDetail extends JobListItem {
   attachments: { path: string; url: string; name: string }[];
   /**
    * Only present when the request is authenticated.
-   * `null` means the user has not bid on this job; otherwise contains the bid's status.
+   * `null` means the user has not bid on this job; otherwise contains the bid's details.
    */
-  user_bid?: { status: 'pending' | 'accepted' | 'rejected' } | null;
+  user_bid?: UserBidSummary | null;
+}
+
+export interface UserBidSummary {
+  id: number;
+  status: 'pending' | 'accepted' | 'rejected';
+  proposed_price: number;
+  estimated_delivery_time: string;
+  created_at: string;
 }
 
 export interface JobFilters {

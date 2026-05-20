@@ -4,6 +4,7 @@ namespace App\Queries;
 
 use App\Enums\JobStatus;
 use App\Http\Requests\JobIndexRequest;
+use App\Models\Bid;
 use App\Models\Job;
 use App\Models\JobCategory;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -20,6 +21,17 @@ class JobQuery
         $query = Job::query()
             ->with(['category', 'poster'])
             ->withCount('bids');
+
+        // For authed users, pull each row's bid status (if any) in a single
+        // subquery — avoids N+1 lookups in JobListResource.
+        if ($userId = auth('sanctum')->id()) {
+            $query->addSelect([
+                'user_bid_status' => Bid::select('status')
+                    ->whereColumn('job_id', 'jobs.id')
+                    ->where('user_id', $userId)
+                    ->limit(1),
+            ]);
+        }
 
         // Status filter — default to open jobs only; pass status=all to include closed.
         $status = $request->validated('status', 'open');
@@ -57,6 +69,7 @@ class JobQuery
 
         match ($request->validated('sort', 'newest')) {
             'highest_budget' => $query->orderByDesc('budget_max'),
+            'lowest_budget' => $query->orderBy('budget_min'),
             default => $query->orderByDesc('created_at'),
         };
 

@@ -59,8 +59,12 @@ All demo accounts share the password: **`password`**. Role is chosen at login, s
 - Accepting a bid automatically closes the job and rejects all other pending bids
 
 ### Accountant Features
-- My Bids dashboard showing all submitted bids with status (pending / accepted / rejected)
-- Paginated bid list with empty state
+- My Bids dashboard with at-a-glance stats banner (total / pending / accepted / rejected)
+- Click any stat to filter the list by that status
+- Paginated bid list with status-aware empty states
+- Edit or withdraw your own pending bid (locked once the client accepts or rejects)
+- "Already applied" badge on the jobs listing so you can see at a glance which jobs you've bid on
+- Accepted-bid card shows your committed price + delivery time and next-steps copy
 
 ### UI & Auth
 - Navbar hover dropdown: Profile, Switch Role, Sign Out
@@ -256,7 +260,7 @@ The app will be available at `http://localhost:3000`.
 | `status`     | string | `open` (default), `closed`, or `all`                   |
 | `date_from`  | string | From month, format: `YYYY-MM`                          |
 | `date_to`    | string | To month, format: `YYYY-MM`                            |
-| `sort`       | string | `newest` or `highest_budget`                           |
+| `sort`       | string | `newest`, `highest_budget`, or `lowest_budget`         |
 | `page`       | number | Page number                                            |
 | `per_page`   | number | Results per page (max 50)                              |
 
@@ -270,10 +274,13 @@ The app will be available at `http://localhost:3000`.
 
 Requires a token with ability `accountant`.
 
-| Method | Endpoint              | Auth     | Description        |
-|--------|-----------------------|----------|--------------------|
-| POST   | `/api/jobs/{id}/bids` | Required | Submit a bid       |
-| GET    | `/api/my-bids`        | Required | My submitted bids  |
+| Method | Endpoint               | Auth     | Description                                                                  |
+|--------|------------------------|----------|------------------------------------------------------------------------------|
+| POST   | `/api/jobs/{id}/bids`  | Required | Submit a bid                                                                 |
+| GET    | `/api/my-bids`         | Required | My submitted bids (optional `status=pending\|accepted\|rejected\|all` filter) |
+| GET    | `/api/my-bids/stats`   | Required | Counts grouped by status: `{ total, pending, accepted, rejected }`           |
+| PATCH  | `/api/my-bids/{id}`    | Required | Update a pending bid (403 once accepted/rejected)                            |
+| DELETE | `/api/my-bids/{id}`    | Required | Withdraw a pending bid (403 once accepted/rejected)                          |
 
 ### Client — Jobs
 
@@ -304,16 +311,34 @@ Requires a token with ability `client`.
 
 ## Running Tests
 
+### Backend
+
 ```bash
 cd backend
 php artisan test
 ```
 
-**45 feature tests / 164 assertions covering:**
+**65 feature tests / 216 assertions covering:**
 - **Auth** — register validation, duplicate email, login with required role, wrong password, logout, `/me`, token-issued-with-role-ability
-- **Jobs** — listing structure, search, multi-category filter, budget range, sort by newest/highest budget, pagination, status filter default-to-open / closed-only / all, invalid sort & status rejection, detail endpoint, 404 on missing
-- **Bids** — submit (success / guest blocked / closed job / duplicate / validation / 404), my-bids list scoped to current user, empty state, auth required
-- **Job detail** — includes `user_has_bid` for authenticated users, omits for guests
+- **Jobs** — listing structure, search, multi-category filter, budget range, sort by newest/highest/lowest budget, pagination, status filter default-to-open / closed-only / all, invalid sort & status rejection, detail endpoint, 404 on missing
+- **Bids — submit** — success / guest blocked / closed job / past-deadline / duplicate / own-job / price-in-budget-range / delivery-not-longer-than-job / validation / 404
+- **Bids — my bids** — list scoped to current user, status filter, empty state, auth required
+- **Bids — stats** — counts grouped by status
+- **Bids — update / withdraw** — owner-only, pending-only (forbidden once accepted/rejected), validation rules apply on update
+- **Job detail** — includes `user_bid` for authenticated users (with status, price, delivery), null when authed without bid, omits for guests
+- **Close-expired** — scheduled command, lazy-close on listing and detail
+
+### Frontend
+
+```bash
+cd frontend
+npm test
+```
+
+**22 tests covering:**
+- `lib/deliveryOptions` — durations table + filtering by cap
+- `lib/formatters` — currency, budget range, date, and relative time
+- `JobCard` — core fields, bid count pluralization, status badges, user-bid badge variants (pending/accepted/rejected)
 
 ---
 
@@ -364,6 +389,10 @@ Every job has an **Application Deadline** (last day to submit bids) and an **Exp
 3. **Eligibility guard** — `BidEligibilityService` rejects any bid past the deadline with a 409, even if neither layer above has run yet (direct API POST)
 
 Trade-off acknowledged: once auto-closed, the client can no longer accept the existing pending bids on that job. This is the intended behavior — the deadline is a hard cutoff for the whole hiring window, not just for new applications.
+
+### Pending bids are mutable, decided bids are locked
+
+Accountants can edit (`PATCH /api/my-bids/{id}`) or withdraw (`DELETE /api/my-bids/{id}`) their own bid **only while it's pending**. Once the client accepts or rejects, both endpoints 403. Enforced in `BidPolicy::modify` and surfaced in the UI: Edit/Withdraw buttons only render on cards with `status === 'pending'`.
 
 ### Accepting a bid is transactional
 
@@ -419,4 +448,4 @@ Only the origin in `FRONTEND_URL` (production `.env`) is allowed. No wildcard. M
 - [x] API endpoints documented + Postman collection (`Accountant-Hub.postman_collection.json`)
 - [x] Assumptions documented (above)
 - [x] Seeded demo data (3 clients, 5 accountants, 30 jobs, sample bids)
-- [x] 45 backend feature tests passing
+- [x] 65 backend feature tests + 22 frontend tests, all passing
