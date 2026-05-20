@@ -15,14 +15,14 @@ interface Props {
 
 export default function BidReviewCard({ bid, jobOpen, onStatusChange }: Props) {
   const [expanded, setExpanded] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loadingAction, setLoadingAction] = useState<'accepted' | 'rejected' | null>(null);
 
   async function handleAction(status: 'accepted' | 'rejected') {
-    setLoading(true);
+    setLoadingAction(status);
     try {
       await onStatusChange(bid.id, status);
     } finally {
-      setLoading(false);
+      setLoadingAction(null);
     }
   }
 
@@ -82,7 +82,8 @@ export default function BidReviewCard({ bid, jobOpen, onStatusChange }: Props) {
             variant="primary"
             size="sm"
             className="flex-1"
-            loading={loading}
+            loading={loadingAction === 'accepted'}
+            disabled={loadingAction !== null}
             onClick={() => handleAction('accepted')}
           >
             Accept
@@ -91,7 +92,8 @@ export default function BidReviewCard({ bid, jobOpen, onStatusChange }: Props) {
             variant="outline"
             size="sm"
             className="flex-1 border-red-200! text-red-500! hover:bg-red-50!"
-            loading={loading}
+            loading={loadingAction === 'rejected'}
+            disabled={loadingAction !== null}
             onClick={() => handleAction('rejected')}
           >
             Reject

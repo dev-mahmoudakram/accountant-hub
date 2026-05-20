@@ -332,7 +332,12 @@ export default function JobDetailContent({ jobId }: JobDetailProps) {
                       </svg>
                       Submit Your Bid
                     </h2>
-                    <BidForm jobId={jobId} onSuccess={() => setHasApplied(true)} />
+                    <BidForm
+                      jobId={jobId}
+                      budgetMin={job.budget_min}
+                      budgetMax={job.budget_max}
+                      onSuccess={() => setHasApplied(true)}
+                    />
                   </div>
                 )}
 

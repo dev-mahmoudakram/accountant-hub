@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -13,17 +13,24 @@ import Alert from '@/components/ui/Alert';
 import { api } from '@/lib/api';
 import { fadeUp } from '@/lib/animations';
 
-const schema = z.object({
-  proposed_price: z.number({ error: 'Enter a valid price' }).min(1, 'Must be at least $1'),
-  estimated_delivery_time: z.string().min(1, 'Required').max(60, 'Max 60 characters'),
-  cover_letter: z.string().min(50, 'Must be at least 50 characters'),
-  experience_summary: z.string().min(30, 'Must be at least 30 characters'),
-});
+function buildSchema(budgetMin: number, budgetMax: number) {
+  return z.object({
+    proposed_price: z
+      .number({ error: 'Enter a valid price' })
+      .min(budgetMin, `Must be at least $${budgetMin}`)
+      .max(budgetMax, `Must be at most $${budgetMax}`),
+    estimated_delivery_time: z.string().min(1, 'Required').max(60, 'Max 60 characters'),
+    cover_letter: z.string().min(50, 'Must be at least 50 characters'),
+    experience_summary: z.string().min(30, 'Must be at least 30 characters'),
+  });
+}
 
-type FormValues = z.infer<typeof schema>;
+type FormValues = z.infer<ReturnType<typeof buildSchema>>;
 
 interface BidFormProps {
   jobId: number;
+  budgetMin: number;
+  budgetMax: number;
   onSuccess: () => void;
 }
 
@@ -37,8 +44,9 @@ function CharCount({ value, min }: { value: string; min: number }) {
   );
 }
 
-export default function BidForm({ jobId, onSuccess }: BidFormProps) {
+export default function BidForm({ jobId, budgetMin, budgetMax, onSuccess }: BidFormProps) {
   const [serverError, setServerError] = useState<string | null>(null);
+  const schema = useMemo(() => buildSchema(budgetMin, budgetMax), [budgetMin, budgetMax]);
 
   const {
     register,
@@ -90,10 +98,11 @@ export default function BidForm({ jobId, onSuccess }: BidFormProps) {
         <Input
           label="Proposed Price ($)"
           type="number"
-          placeholder="e.g. 500"
-          min={1}
+          placeholder={`e.g. ${budgetMin}`}
+          min={budgetMin}
+          max={budgetMax}
           error={errors.proposed_price?.message}
-          hint="Your total fee for this job"
+          hint={`Must be between $${budgetMin} and $${budgetMax}`}
           {...register('proposed_price', { valueAsNumber: true })}
         />
         <Input

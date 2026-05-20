@@ -28,7 +28,11 @@ class BidsTest extends TestCase
     public function test_authenticated_user_can_submit_bid(): void
     {
         $user = User::factory()->create();
-        $job = Job::factory()->create(['status' => JobStatus::Open]);
+        $job = Job::factory()->create([
+            'status' => JobStatus::Open,
+            'budget_min' => 500,
+            'budget_max' => 5000,
+        ]);
 
         Sanctum::actingAs($user, ['accountant']);
 
@@ -71,6 +75,8 @@ class BidsTest extends TestCase
         $job = Job::factory()->create([
             'status' => JobStatus::Open,
             'deadline' => now()->subDay()->toDateString(),
+            'budget_min' => 500,
+            'budget_max' => 5000,
         ]);
 
         Sanctum::actingAs($user, ['accountant']);
@@ -83,7 +89,11 @@ class BidsTest extends TestCase
     public function test_user_cannot_submit_duplicate_bid(): void
     {
         $user = User::factory()->create();
-        $job = Job::factory()->create(['status' => JobStatus::Open]);
+        $job = Job::factory()->create([
+            'status' => JobStatus::Open,
+            'budget_min' => 500,
+            'budget_max' => 5000,
+        ]);
 
         Bid::factory()->create(['user_id' => $user->id, 'job_id' => $job->id]);
 
@@ -121,6 +131,42 @@ class BidsTest extends TestCase
 
         $this->postJson("/api/jobs/{$job->id}/bids", array_merge($this->validBid, [
                 'proposed_price' => 'not-a-number',
+            ]))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['proposed_price']);
+    }
+
+    public function test_submit_bid_rejects_price_below_job_budget_min(): void
+    {
+        $user = User::factory()->create();
+        $job = Job::factory()->create([
+            'status' => JobStatus::Open,
+            'budget_min' => 1000,
+            'budget_max' => 2000,
+        ]);
+
+        Sanctum::actingAs($user, ['accountant']);
+
+        $this->postJson("/api/jobs/{$job->id}/bids", array_merge($this->validBid, [
+                'proposed_price' => 500,
+            ]))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['proposed_price']);
+    }
+
+    public function test_submit_bid_rejects_price_above_job_budget_max(): void
+    {
+        $user = User::factory()->create();
+        $job = Job::factory()->create([
+            'status' => JobStatus::Open,
+            'budget_min' => 1000,
+            'budget_max' => 2000,
+        ]);
+
+        Sanctum::actingAs($user, ['accountant']);
+
+        $this->postJson("/api/jobs/{$job->id}/bids", array_merge($this->validBid, [
+                'proposed_price' => 5000,
             ]))
             ->assertStatus(422)
             ->assertJsonValidationErrors(['proposed_price']);
