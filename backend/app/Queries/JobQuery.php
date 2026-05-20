@@ -13,6 +13,10 @@ class JobQuery
 {
     public function get(JobIndexRequest $request): LengthAwarePaginator
     {
+        // Lazy-close any jobs whose deadline has passed so the listing
+        // reflects fresh status even on hosts without cron.
+        Job::closeExpired();
+
         $query = Job::query()
             ->with(['category', 'poster'])
             ->withCount('bids');

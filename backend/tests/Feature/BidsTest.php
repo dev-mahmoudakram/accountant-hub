@@ -65,6 +65,21 @@ class BidsTest extends TestCase
             ->assertJsonPath('success', false);
     }
 
+    public function test_user_cannot_bid_past_application_deadline(): void
+    {
+        $user = User::factory()->create();
+        $job = Job::factory()->create([
+            'status' => JobStatus::Open,
+            'deadline' => now()->subDay()->toDateString(),
+        ]);
+
+        Sanctum::actingAs($user, ['accountant']);
+
+        $this->postJson("/api/jobs/{$job->id}/bids", $this->validBid)
+            ->assertStatus(409)
+            ->assertJsonPath('success', false);
+    }
+
     public function test_user_cannot_submit_duplicate_bid(): void
     {
         $user = User::factory()->create();

@@ -7,7 +7,27 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property int|null $user_id
+ * @property int $category_id
+ * @property string $title
+ * @property string $company_name
+ * @property string $short_description
+ * @property string $description
+ * @property string $budget_min
+ * @property string $budget_max
+ * @property Carbon|null $deadline
+ * @property string $expected_delivery_time
+ * @property array<int, string> $required_skills
+ * @property array<int, string>|null $attachments
+ * @property JobStatus $status
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property int|null $bids_count
+ */
 class Job extends Model
 {
     use HasFactory;
@@ -53,5 +73,19 @@ class Job extends Model
     public function poster(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * Close any open jobs whose application deadline has passed.
+     *
+     * Called by the scheduled command and lazily on the read endpoints,
+     * so the listing / detail show fresh status even without cron.
+     */
+    public static function closeExpired(): int
+    {
+        return static::query()
+            ->where('status', JobStatus::Open)
+            ->whereDate('deadline', '<', today())
+            ->update(['status' => JobStatus::Closed]);
     }
 }

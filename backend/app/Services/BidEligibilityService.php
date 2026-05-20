@@ -15,6 +15,10 @@ class BidEligibilityService
             return 'This job is closed and no longer accepting bids.';
         }
 
+        if ($job->deadline?->isPast()) {
+            return 'The application deadline has passed.';
+        }
+
         if ($job->user_id === $user->id) {
             return 'You cannot bid on your own job.';
         }

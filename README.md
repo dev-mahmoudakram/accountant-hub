@@ -329,6 +329,11 @@ php artisan test
 6. Run: `php artisan storage:link` (required for file attachment public URLs)
 7. Set `FRONTEND_URL` to your deployed frontend domain
 8. Point your web server document root to `backend/public/`
+9. **Configure the Laravel scheduler** so expired jobs auto-close. Add this cron entry (Plesk: Scheduled Tasks → run every minute):
+   ```
+   * * * * * cd /path-to-project && php artisan schedule:run >> /dev/null 2>&1
+   ```
+   This runs `jobs:close-expired` daily. Even without cron, jobs lazy-close on read — the scheduler just keeps things tidy.
 
 ### Frontend (Vercel)
 
@@ -349,6 +354,16 @@ The brief required only accountant authentication and treated clients as out-of-
 ### Browse-jobs listing defaults to open-only
 
 Closed jobs are hidden by default on `GET /api/jobs` to match standard marketplace behavior. Pass `status=closed` or `status=all` to opt-in. Closed jobs remain reachable directly by ID (`GET /api/jobs/{id}`) and via the client's "My Jobs" page.
+
+### Jobs auto-close at the application deadline
+
+Every job has an **Application Deadline** (last day to submit bids) and an **Expected Delivery Time** (how long the work takes once awarded — separate concept, no enforcement). When the deadline passes the job is closed automatically:
+
+1. **Scheduled command** — `php artisan jobs:close-expired` runs daily (registered in `routes/console.php`)
+2. **Lazy close on read** — `JobQuery::get()` and `ShowJobAction` also run the close helper, so the listing/detail show fresh status even on hosts without cron
+3. **Eligibility guard** — `BidEligibilityService` rejects any bid past the deadline with a 409, even if neither layer above has run yet (direct API POST)
+
+Trade-off acknowledged: once auto-closed, the client can no longer accept the existing pending bids on that job. This is the intended behavior — the deadline is a hard cutoff for the whole hiring window, not just for new applications.
 
 ### Accepting a bid is transactional
 
