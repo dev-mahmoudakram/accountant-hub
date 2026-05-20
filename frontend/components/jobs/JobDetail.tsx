@@ -308,48 +308,54 @@ export default function JobDetailContent({ jobId }: JobDetailProps) {
                     </Link>
                   </div>
                 ) : bidStatus === 'accepted' ? (
-                  <div className="bg-brand-light border border-brand/30 rounded-2xl p-5 text-center shadow-sm">
-                    <div className="w-10 h-10 rounded-full bg-brand flex items-center justify-center mx-auto mb-3 shadow-sm">
-                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}
-                          d="M5 13l4 4L19 7" />
-                      </svg>
+                  <div className="space-y-3">
+                    <div className="bg-brand-light border border-brand/30 rounded-2xl p-5 text-center shadow-sm">
+                      <div className="w-10 h-10 rounded-full bg-brand flex items-center justify-center mx-auto mb-3 shadow-sm">
+                        <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}
+                            d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <p className="text-sm font-semibold text-brand">Bid Accepted!</p>
+                      <p className="text-xs text-muted mt-1">Congratulations — the client chose your bid for this job</p>
                     </div>
-                    <p className="text-sm font-semibold text-brand">Bid Accepted!</p>
-                    <p className="text-xs text-muted mt-1">Congratulations — the client chose your bid for this job</p>
-                    <Link href="/dashboard" className="mt-3 block">
+                    <Link href="/dashboard" className="block">
                       <Button variant="primary" size="sm" className="w-full">
                         View My Bids
                       </Button>
                     </Link>
                   </div>
                 ) : bidStatus === 'rejected' ? (
-                  <div className="bg-red-50 border border-red-200 rounded-2xl p-5 text-center">
-                    <div className="w-10 h-10 rounded-full bg-white border border-red-200 flex items-center justify-center mx-auto mb-3 shadow-sm">
-                      <svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                          d="M6 18L18 6M6 6l12 12" />
-                      </svg>
+                  <div className="space-y-3">
+                    <div className="bg-red-50 border border-red-200 rounded-2xl p-5 text-center">
+                      <div className="w-10 h-10 rounded-full bg-white border border-red-200 flex items-center justify-center mx-auto mb-3 shadow-sm">
+                        <svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </div>
+                      <p className="text-sm font-semibold text-red-600">Bid Rejected</p>
+                      <p className="text-xs text-muted mt-1">The client didn&apos;t move forward with your bid this time.</p>
                     </div>
-                    <p className="text-sm font-semibold text-red-600">Bid Not Selected</p>
-                    <p className="text-xs text-muted mt-1">The client chose a different bidder for this job</p>
-                    <Link href="/dashboard" className="mt-3 block">
+                    <Link href="/dashboard" className="block">
                       <Button variant="outline" size="sm" className="w-full">
                         View My Bids
                       </Button>
                     </Link>
                   </div>
                 ) : bidStatus === 'pending' ? (
-                  <div className="bg-brand-light border border-brand/30 rounded-2xl p-5 text-center shadow-sm">
-                    <div className="w-10 h-10 rounded-full bg-white border border-brand/20 flex items-center justify-center mx-auto mb-3 shadow-sm">
-                      <svg className="w-5 h-5 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}
-                          d="M5 13l4 4L19 7" />
-                      </svg>
+                  <div className="space-y-3">
+                    <div className="bg-brand-light border border-brand/30 rounded-2xl p-5 text-center shadow-sm">
+                      <div className="w-10 h-10 rounded-full bg-white border border-brand/20 flex items-center justify-center mx-auto mb-3 shadow-sm">
+                        <svg className="w-5 h-5 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}
+                            d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <p className="text-sm font-semibold text-brand">Bid Submitted!</p>
+                      <p className="text-xs text-muted mt-1">You&apos;ve already applied for this job — awaiting the client&apos;s decision</p>
                     </div>
-                    <p className="text-sm font-semibold text-brand">Bid Submitted!</p>
-                    <p className="text-xs text-muted mt-1">You&apos;ve already applied for this job — awaiting the client&apos;s decision</p>
-                    <Link href="/dashboard" className="mt-3 block">
+                    <Link href="/dashboard" className="block">
                       <Button variant="outline" size="sm" className="w-full">
                         View My Bids
                       </Button>
