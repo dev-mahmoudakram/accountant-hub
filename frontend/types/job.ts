@@ -31,7 +31,11 @@ export interface JobDetail extends JobListItem {
   description: string;
   required_skills: string[];
   attachments: { path: string; url: string; name: string }[];
-  user_has_bid?: boolean;
+  /**
+   * Only present when the request is authenticated.
+   * `null` means the user has not bid on this job; otherwise contains the bid's status.
+   */
+  user_bid?: { status: 'pending' | 'accepted' | 'rejected' } | null;
 }
 
 export interface JobFilters {

@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Enums\JobStatus;
 use App\Models\Bid;
 use App\Models\Job;
 use App\Models\JobCategory;
@@ -208,7 +207,7 @@ class JobsTest extends TestCase
         $this->getJson('/api/jobs/999')->assertNotFound();
     }
 
-    public function test_job_detail_includes_user_has_bid_when_authenticated(): void
+    public function test_job_detail_includes_user_bid_status_when_authenticated(): void
     {
         $user = User::factory()->create();
         $job = Job::factory()->create();
@@ -217,15 +216,26 @@ class JobsTest extends TestCase
         $this->actingAs($user, 'sanctum')
             ->getJson("/api/jobs/{$job->id}")
             ->assertOk()
-            ->assertJsonPath('data.user_has_bid', true);
+            ->assertJsonPath('data.user_bid.status', 'pending');
     }
 
-    public function test_job_detail_omits_user_has_bid_for_guests(): void
+    public function test_job_detail_returns_null_user_bid_when_authenticated_without_bid(): void
+    {
+        $user = User::factory()->create();
+        $job = Job::factory()->create();
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson("/api/jobs/{$job->id}")
+            ->assertOk()
+            ->assertJsonPath('data.user_bid', null);
+    }
+
+    public function test_job_detail_omits_user_bid_for_guests(): void
     {
         $job = Job::factory()->create();
 
         $response = $this->getJson("/api/jobs/{$job->id}")->assertOk();
 
-        $this->assertArrayNotHasKey('user_has_bid', $response->json('data'));
+        $this->assertArrayNotHasKey('user_bid', $response->json('data'));
     }
 }

@@ -372,7 +372,7 @@
               "host": ["{{base_url}}"],
               "path": ["jobs", "1"]
             },
-            "description": "Public. Includes attachments array (each item has path, name, url). Pass a token to get the user_has_bid field."
+            "description": "Public. Includes attachments array (each item has path, name, url). Pass a token to get the user_bid field — null if the authenticated user hasn't bid, or { status: 'pending' | 'accepted' | 'rejected' } if they have."
           }
         }
       ]

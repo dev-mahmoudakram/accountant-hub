@@ -28,11 +28,15 @@ class JobDetailResource extends JsonResource
             ])->values()->all(),
             'status' => $this->status->value,
             'bids_count' => $this->bids_count ?? 0,
-            'user_has_bid' => $this->when(
+            'user_bid' => $this->when(
                 auth('sanctum')->check(),
-                fn () => Bid::where('user_id', auth('sanctum')->id())
-                    ->where('job_id', $this->id)
-                    ->exists()
+                function () {
+                    $bid = Bid::where('user_id', auth('sanctum')->id())
+                        ->where('job_id', $this->id)
+                        ->first(['status']);
+
+                    return $bid ? ['status' => $bid->status->value] : null;
+                }
             ),
             'category' => new JobCategoryResource($this->whenLoaded('category')),
             'poster' => $this->whenLoaded('poster', fn () => [
