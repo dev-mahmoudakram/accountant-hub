@@ -26,13 +26,13 @@ interface Option<T = string> {
 // ─── Validation ───────────────────────────────────────────────────────────────
 
 const schema = z.object({
-  category_id: z.coerce.number().min(1, 'Please select a category'),
+  category_id: z.number({ error: 'Please select a category' }).min(1, 'Please select a category'),
   title: z.string().min(5, 'Title must be at least 5 characters').max(180),
   company_name: z.string().min(2, 'Company name is required').max(140),
   short_description: z.string().min(10, 'Brief description is required').max(255),
   description: z.string().min(50, 'Description must be at least 50 characters'),
-  budget_min: z.coerce.number().min(1, 'Minimum budget must be at least $1'),
-  budget_max: z.coerce.number().min(1, 'Maximum budget must be at least $1'),
+  budget_min: z.number({ error: 'Enter a valid amount' }).min(1, 'Minimum budget must be at least $1'),
+  budget_max: z.number({ error: 'Enter a valid amount' }).min(1, 'Maximum budget must be at least $1'),
   deadline: z.string().min(1, 'Deadline is required'),
   expected_delivery_time: z.string().min(1, 'Delivery time is required'),
   required_skills: z
@@ -274,7 +274,7 @@ export default function PostJobForm({ initialData, jobId }: Props) {
             min={1}
             placeholder="500"
             error={errors.budget_min?.message}
-            {...register('budget_min')}
+            {...register('budget_min', { valueAsNumber: true })}
           />
           <Input
             label="Budget Max ($)"
@@ -282,7 +282,7 @@ export default function PostJobForm({ initialData, jobId }: Props) {
             min={1}
             placeholder="2000"
             error={errors.budget_max?.message}
-            {...register('budget_max')}
+            {...register('budget_max', { valueAsNumber: true })}
           />
         </div>
 
