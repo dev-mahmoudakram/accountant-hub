@@ -1,6 +1,37 @@
 # Accountant Hub
 
-A marketplace-style web application where businesses post accounting jobs and qualified accountants submit competitive bids. Built as a full-stack project demonstrating clean architecture, role-based access control, and production-ready patterns.
+A marketplace-style web application where businesses post accounting jobs and qualified accountants submit competitive bids. Built as a full-stack assessment project demonstrating clean architecture, role-based access control, and production-ready patterns.
+
+---
+
+## Live Demo
+
+- **Frontend (Vercel):** https://accountant-hub.vercel.app
+- **Backend API (Plesk):** https://accountant-hub.khantarish.com/api
+
+### Quick reviewer guide
+
+1. Open the frontend URL.
+2. Click **Sign In** → enter `demo@accountant-hub.test` / `password`, choose **"I'm an Accountant"** → bid on any open job.
+3. Sign out, sign back in with the same email but choose **"I'm Hiring"** → post a job, see incoming bids, accept/reject them.
+4. Or, from the navbar dropdown, **Switch Role** without logging out.
+
+### Demo credentials
+
+All demo accounts share the password: **`password`**. Role is chosen at login, so any account can be used as either an accountant or a client.
+
+| Name            | Email                           | Seeded role |
+|-----------------|---------------------------------|-------------|
+| Demo User       | demo@accountant-hub.test        | Accountant  |
+| Sarah Mitchell  | sarah@accountant-hub.test       | Accountant  |
+| James Carter    | james@accountant-hub.test       | Accountant  |
+| Priya Sharma    | priya@accountant-hub.test       | Accountant  |
+| Thomas Nguyen   | thomas@accountant-hub.test      | Accountant  |
+| Alex Morgan     | alex@accountant-hub.test        | Client      |
+| Jordan Lee      | jordan@accountant-hub.test      | Client      |
+| Chris Evans     | chris@accountant-hub.test       | Client      |
+
+> The "Seeded role" column reflects who owns existing seeded jobs/bids. Login is independent — you can sign in as either role with any account.
 
 ---
 
@@ -216,17 +247,18 @@ The app will be available at `http://localhost:3000`.
 
 **Job listing query params:**
 
-| Param        | Type   | Description                        |
-|--------------|--------|------------------------------------|
-| `search`     | string | Filter by title                    |
-| `category`   | string | Comma-separated category slugs     |
-| `budget_min` | number | Minimum budget filter              |
-| `budget_max` | number | Maximum budget filter              |
-| `date_from`  | string | From month, format: `YYYY-MM`      |
-| `date_to`    | string | To month, format: `YYYY-MM`        |
-| `sort`       | string | `newest` or `highest_budget`       |
-| `page`       | number | Page number                        |
-| `per_page`   | number | Results per page (max 50)          |
+| Param        | Type   | Description                                            |
+|--------------|--------|--------------------------------------------------------|
+| `search`     | string | Filter by title                                        |
+| `category`   | string | Comma-separated category slugs                         |
+| `budget_min` | number | Minimum budget filter                                  |
+| `budget_max` | number | Maximum budget filter                                  |
+| `status`     | string | `open` (default), `closed`, or `all`                   |
+| `date_from`  | string | From month, format: `YYYY-MM`                          |
+| `date_to`    | string | To month, format: `YYYY-MM`                            |
+| `sort`       | string | `newest` or `highest_budget`                           |
+| `page`       | number | Page number                                            |
+| `per_page`   | number | Results per page (max 50)                              |
 
 ### Categories
 
@@ -270,22 +302,6 @@ Requires a token with ability `client`.
 
 ---
 
-## Demo Credentials
-
-All demo accounts use the password: **`password`**
-
-Sign in with any email and choose your role at login.
-
-| Name            | Email                           |
-|-----------------|---------------------------------|
-| Demo User       | demo@accountant-hub.test        |
-| Sarah Mitchell  | sarah@accountant-hub.test       |
-| James Carter    | james@accountant-hub.test       |
-| Priya Sharma    | priya@accountant-hub.test       |
-| Thomas Nguyen   | thomas@accountant-hub.test      |
-
----
-
 ## Running Tests
 
 ```bash
@@ -293,11 +309,11 @@ cd backend
 php artisan test
 ```
 
-Test coverage includes:
-- Auth: register, login, logout, duplicate email
-- Jobs: listing, filters, pagination, job detail
-- Bids: submit bid, duplicate bid prevention, closed job prevention
-- My Bids: returns only the authenticated user's bids
+**45 feature tests / 164 assertions covering:**
+- **Auth** — register validation, duplicate email, login with required role, wrong password, logout, `/me`, token-issued-with-role-ability
+- **Jobs** — listing structure, search, multi-category filter, budget range, sort by newest/highest budget, pagination, status filter default-to-open / closed-only / all, invalid sort & status rejection, detail endpoint, 404 on missing
+- **Bids** — submit (success / guest blocked / closed job / duplicate / validation / 404), my-bids list scoped to current user, empty state, auth required
+- **Job detail** — includes `user_has_bid` for authenticated users, omits for guests
 
 ---
 
@@ -319,3 +335,73 @@ Test coverage includes:
 1. Import the `frontend/` directory as a Vercel project
 2. Set `NEXT_PUBLIC_API_URL` to your deployed backend API URL
 3. Deploy — Vercel handles the build automatically
+
+---
+
+## Assumptions & Design Decisions
+
+These are the non-obvious choices made while building, called out for the reviewer.
+
+### Role is a token ability, not a user column
+
+The brief required only accountant authentication and treated clients as out-of-scope. To make the live demo demonstrable end-to-end (post a job → bid on it → accept the bid), I built a lightweight client side as well. Rather than adding a `role` column to users (which would lock each account to one side), the role is stored as a **Sanctum token ability**: it's chosen at login, can be switched any time via `POST /api/switch-role`, and middleware (`role:accountant` / `role:client`) checks `$user->tokenCan($role)`. This means the same demo email can sign in as either role for testing.
+
+### Browse-jobs listing defaults to open-only
+
+Closed jobs are hidden by default on `GET /api/jobs` to match standard marketplace behavior. Pass `status=closed` or `status=all` to opt-in. Closed jobs remain reachable directly by ID (`GET /api/jobs/{id}`) and via the client's "My Jobs" page.
+
+### Accepting a bid is transactional
+
+`PATCH /api/client/jobs/{id}/bids/{bidId}` with `status=accepted` does three writes: mark the bid accepted, set the job to closed, reject all other pending bids on that job. All three run inside `DB::transaction` so partial state is impossible.
+
+### Duplicate-bid prevention is three-layered
+
+The brief required preventing duplicate bids. I enforce this at:
+1. **Database** — unique index on `(user_id, job_id)` on the `bids` table
+2. **Business logic** — `BidEligibilityService` checks before insert
+3. **Frontend UX** — `user_has_bid` flag from the job detail endpoint flips the bid form to a "Bid Submitted" state
+
+The DB constraint catches the race condition between the service check and the insert — the action catches `UniqueConstraintViolationException` and returns a clean 409.
+
+### Attachments
+
+The brief mentioned an "attachments placeholder, if any". I implemented real uploads with drag-and-drop. Uploaded filenames are **slugified and given a random suffix** to prevent collisions and path-traversal (e.g. `invoice.pdf` becomes `invoice-a3b7c2d9.pdf`). The original filename isn't preserved in storage but is reflected in the displayed name.
+
+### Bid cannot target own job
+
+An accountant cannot bid on a job they posted as a client (since the same user account can switch roles). Enforced in `BidEligibilityService` (409 from API) and in the UI (bid form replaced with a "This is your job" card).
+
+### Closed jobs cannot be edited
+
+`JobPolicy::update` returns false when `$job->status === Closed`. The PATCH endpoint then 403s. Frontend `/edit` page also redirects away.
+
+### DB-agnostic queries
+
+`/api/jobs/years` originally used MySQL's `YEAR()` function which breaks on SQLite (used by tests and local dev). It now pulls `created_at` and maps to years in PHP so it works on any driver.
+
+### CORS
+
+Only the origin in `FRONTEND_URL` (production `.env`) is allowed. No wildcard. Multiple comma-separated origins are supported.
+
+### What I deliberately did **not** build
+
+- Password reset / email verification — not in the brief
+- Admin panel — not in the brief
+- Real-time bid notifications — not in the brief
+- Payment processing — not in the brief
+- User profile editing beyond viewing — not in the brief
+
+---
+
+## Submission Checklist
+
+- [x] GitHub repository — see repo URL
+- [x] Live demo URL — https://accountant-hub.vercel.app
+- [x] Test credentials — see [Live Demo](#live-demo) section above
+- [x] README — this file
+- [x] Tech stack documented
+- [x] Setup instructions for both backend and frontend
+- [x] API endpoints documented + Postman collection (`Accountant-Hub.postman_collection.json`)
+- [x] Assumptions documented (above)
+- [x] Seeded demo data (3 clients, 5 accountants, 30 jobs, sample bids)
+- [x] 45 backend feature tests passing
