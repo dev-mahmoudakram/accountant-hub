@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -12,7 +13,7 @@ import Button from '@/components/ui/Button';
 import { mobileMenuOverlay, mobileMenuDrawer } from '@/lib/animations';
 import { api } from '@/lib/api';
 import { ApiResponse } from '@/types/api';
-import { AuthResponse, UserRole } from '@/types/user';
+import { AuthResponse } from '@/types/user';
 
 function NavLink({
   href,
@@ -77,7 +78,6 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [switching, setSwitching] = useState(false);
-  const [pendingRole, setPendingRole] = useState<UserRole | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -106,15 +106,6 @@ export default function Navbar() {
     closeTimer.current = setTimeout(() => setDropdownOpen(false), 150);
   }
 
-  // Navigate only once the auth context actually reflects the new role,
-  // so the destination page's role guard never sees stale state.
-  useEffect(() => {
-    if (!pendingRole || user?.role !== pendingRole) return;
-    router.push(pendingRole === 'client' ? '/client/jobs' : '/jobs');
-    setPendingRole(null);
-    setSwitching(false);
-  }, [pendingRole, user?.role, router]);
-
   async function handleSwitchRole() {
     const target = otherRole;
     setSwitching(true);
@@ -122,11 +113,14 @@ export default function Navbar() {
     try {
       const res = await api.post<ApiResponse<AuthResponse>>('/switch-role', { role: target });
       setDropdownOpen(false);
-      setPendingRole(target);
-      login(res.data.token, res.data.user);
+      // Flush the auth update synchronously so the destination page's
+      // role guard sees the new role, not the stale one.
+      flushSync(() => login(res.data.token, res.data.user));
+      router.push(target === 'client' ? '/client/jobs' : '/jobs');
     } catch {
       loader.done();
       toast.error('Could not switch role. Please try again.');
+    } finally {
       setSwitching(false);
     }
   }
@@ -369,11 +363,36 @@ export default function Navbar() {
                         <p className="text-xs text-white/40">{roleLabel}</p>
                       </div>
                     </div>
+                    <Link
+                      href="/profile"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-colors text-sm font-medium focus-visible:outline-none"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      Profile
+                    </Link>
+                    <button
+                      type="button"
+                      disabled={switching}
+                      onClick={() => { handleSwitchRole(); setMobileOpen(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-colors text-sm font-medium disabled:opacity-50 focus-visible:outline-none"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                      </svg>
+                      {switching ? 'Switching…' : `Switch to ${otherRoleLabel}`}
+                    </button>
+                    <div className="border-t border-white/10 my-1" />
                     <button
                       type="button"
                       onClick={() => { logout(); setMobileOpen(false); }}
-                      className="w-full text-left px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-colors text-sm font-medium focus-visible:outline-none"
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:text-red-300 hover:bg-white/10 transition-colors text-sm font-medium focus-visible:outline-none"
                     >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      </svg>
                       Sign Out
                     </button>
                   </>
