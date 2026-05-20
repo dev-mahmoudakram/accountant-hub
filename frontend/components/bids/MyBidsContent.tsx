@@ -32,23 +32,23 @@ interface Stats {
   rejected: number;
 }
 
-const STATUS_TABS: { value: StatusFilter; label: string; color: string }[] = [
-  { value: 'all',      label: 'All',      color: 'bg-gray-400' },
-  { value: 'pending',  label: 'Pending',  color: 'bg-yellow-400' },
-  { value: 'accepted', label: 'Accepted', color: 'bg-brand' },
-  { value: 'rejected', label: 'Rejected', color: 'bg-red-500' },
+const STATUS_TABS: { value: StatusFilter; label: string; dot: string }[] = [
+  { value: 'all',      label: 'All',      dot: 'bg-gray-400' },
+  { value: 'pending',  label: 'Pending',  dot: 'bg-yellow-400' },
+  { value: 'accepted', label: 'Accepted', dot: 'bg-brand' },
+  { value: 'rejected', label: 'Rejected', dot: 'bg-red-500' },
 ];
 
-function StatCard({
+function FilterPill({
   label,
-  value,
-  color,
+  count,
+  dot,
   active,
   onClick,
 }: {
   label: string;
-  value: number;
-  color: string;
+  count: number;
+  dot: string;
   active: boolean;
   onClick: () => void;
 }) {
@@ -56,19 +56,24 @@ function StatCard({
     <button
       type="button"
       onClick={onClick}
-      className={[
-        'text-left bg-white border rounded-2xl p-5 transition-all focus-visible:outline-none',
-        active
-          ? 'border-brand shadow-md ring-2 ring-brand/20'
-          : 'border-border hover:border-brand/40 hover:shadow-sm',
-      ].join(' ')}
       aria-label={`Filter by ${label} bids${active ? ' (currently selected)' : ''}`}
+      className={[
+        'inline-flex items-center gap-2 px-3.5 py-2 rounded-full border text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30',
+        active
+          ? 'bg-brand text-white border-brand'
+          : 'bg-white text-ink border-border hover:border-brand/40 hover:bg-surface',
+      ].join(' ')}
     >
-      <p className="text-2xl font-bold text-ink">{value}</p>
-      <div className="flex items-center gap-1.5 mt-1">
-        <span className={`w-2 h-2 rounded-full ${color}`} />
-        <p className="text-xs text-muted font-medium">{label}</p>
-      </div>
+      <span className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-white' : dot}`} />
+      <span>{label}</span>
+      <span
+        className={[
+          'inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full text-xs font-semibold',
+          active ? 'bg-white/20 text-white' : 'bg-surface text-muted',
+        ].join(' ')}
+      >
+        {count}
+      </span>
     </button>
   );
 }
@@ -176,24 +181,25 @@ export default function MyBidsContent() {
         </p>
       </div>
 
-      {/* Stats row — click to filter */}
+      {/* Status filter pills — click to filter */}
       {stats.total > 0 && (
         <motion.div
-          variants={staggerContainer}
+          variants={fadeUp}
           initial="hidden"
           animate="visible"
-          className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8"
+          className="flex flex-wrap items-center gap-2 mb-8"
+          role="group"
+          aria-label="Filter bids by status"
         >
           {STATUS_TABS.map((t) => (
-            <motion.div key={t.value} variants={fadeUp}>
-              <StatCard
-                label={t.label}
-                value={t.value === 'all' ? stats.total : stats[t.value]}
-                color={t.color}
-                active={status === t.value}
-                onClick={() => pushQuery({ status: t.value })}
-              />
-            </motion.div>
+            <FilterPill
+              key={t.value}
+              label={t.label}
+              count={t.value === 'all' ? stats.total : stats[t.value]}
+              dot={t.dot}
+              active={status === t.value}
+              onClick={() => pushQuery({ status: t.value })}
+            />
           ))}
         </motion.div>
       )}
