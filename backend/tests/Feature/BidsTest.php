@@ -16,7 +16,7 @@ class BidsTest extends TestCase
 
     private array $validBid = [
         'proposed_price' => 1500,
-        'estimated_delivery_time' => '2 weeks',
+        'estimated_delivery_time' => '1 week',
         'cover_letter' => 'I have extensive experience in this area and I am confident I can deliver excellent results for your project.',
         'experience_summary' => 'Five years of experience as a certified public accountant specializing in this domain.',
     ];
@@ -60,7 +60,11 @@ class BidsTest extends TestCase
     public function test_user_cannot_bid_on_closed_job(): void
     {
         $user = User::factory()->create();
-        $job = Job::factory()->create(['status' => JobStatus::Closed]);
+        $job = Job::factory()->create([
+            'status' => JobStatus::Closed,
+            'budget_min' => 500,
+            'budget_max' => 5000,
+        ]);
 
         Sanctum::actingAs($user, ['accountant']);
 
@@ -170,6 +174,44 @@ class BidsTest extends TestCase
             ]))
             ->assertStatus(422)
             ->assertJsonValidationErrors(['proposed_price']);
+    }
+
+    public function test_submit_bid_rejects_delivery_longer_than_job_expected(): void
+    {
+        $user = User::factory()->create();
+        $job = Job::factory()->create([
+            'status' => JobStatus::Open,
+            'budget_min' => 500,
+            'budget_max' => 5000,
+            'expected_delivery_time' => '2 weeks',
+        ]);
+
+        Sanctum::actingAs($user, ['accountant']);
+
+        $this->postJson("/api/jobs/{$job->id}/bids", array_merge($this->validBid, [
+                'estimated_delivery_time' => '1 month',
+            ]))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['estimated_delivery_time']);
+    }
+
+    public function test_submit_bid_rejects_unknown_delivery_duration(): void
+    {
+        $user = User::factory()->create();
+        $job = Job::factory()->create([
+            'status' => JobStatus::Open,
+            'budget_min' => 500,
+            'budget_max' => 5000,
+            'expected_delivery_time' => '3 months',
+        ]);
+
+        Sanctum::actingAs($user, ['accountant']);
+
+        $this->postJson("/api/jobs/{$job->id}/bids", array_merge($this->validBid, [
+                'estimated_delivery_time' => '4 hours',
+            ]))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['estimated_delivery_time']);
     }
 
     public function test_submit_bid_returns_404_for_missing_job(): void

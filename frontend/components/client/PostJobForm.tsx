@@ -14,6 +14,7 @@ import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Button from '@/components/ui/Button';
 import AttachmentDropzone from '@/components/client/AttachmentDropzone';
+import { DELIVERY_OPTIONS as DELIVERY_DURATIONS } from '@/lib/deliveryOptions';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -46,9 +47,7 @@ type FormValues = z.infer<typeof schema>;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const DELIVERY_OPTIONS: Option[] = [
-  '1 week', '2 weeks', '3 weeks', '1 month', '6 weeks', '2 months', '3 months',
-].map((v) => ({ value: v, label: v }));
+const DELIVERY_OPTIONS: Option[] = DELIVERY_DURATIONS.map((d) => ({ value: d.value, label: d.label }));
 
 // ─── React Select shared styles (matches the project's brand) ────────────────
 

@@ -1,25 +1,36 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import ReactSelect, { StylesConfig } from 'react-select';
 import Input from '@/components/ui/Input';
-import Textarea from '@/components/ui/Textarea';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import { api } from '@/lib/api';
 import { fadeUp } from '@/lib/animations';
+import { DeliveryOption, deliveryOptionsUpTo } from '@/lib/deliveryOptions';
 
-function buildSchema(budgetMin: number, budgetMax: number) {
+function buildSchema(
+  budgetMin: number,
+  budgetMax: number,
+  allowedDeliveryValues: string[],
+) {
   return z.object({
     proposed_price: z
       .number({ error: 'Enter a valid price' })
       .min(budgetMin, `Must be at least $${budgetMin}`)
       .max(budgetMax, `Must be at most $${budgetMax}`),
-    estimated_delivery_time: z.string().min(1, 'Required').max(60, 'Max 60 characters'),
+    estimated_delivery_time: z
+      .string()
+      .min(1, 'Required')
+      .refine(
+        (v) => allowedDeliveryValues.includes(v),
+        `Must not exceed the job's expected delivery time`,
+      ),
     cover_letter: z.string().min(50, 'Must be at least 50 characters'),
     experience_summary: z.string().min(30, 'Must be at least 30 characters'),
   });
@@ -31,8 +42,44 @@ interface BidFormProps {
   jobId: number;
   budgetMin: number;
   budgetMax: number;
+  expectedDeliveryTime: string;
   onSuccess: () => void;
 }
+
+const deliverySelectStyles: StylesConfig<DeliveryOption, false> = {
+  control: (base, { isFocused }) => ({
+    ...base,
+    minHeight: '40px',
+    borderRadius: '0.5rem',
+    borderColor: isFocused ? '#019a51' : '#e5e7eb',
+    boxShadow: isFocused ? '0 0 0 3px rgba(1,154,81,0.15)' : 'none',
+    backgroundColor: '#fff',
+    fontSize: '0.875rem',
+    transition: 'border-color 150ms, box-shadow 150ms',
+    '&:hover': { borderColor: isFocused ? '#019a51' : '#d1d5db' },
+  }),
+  placeholder: (base) => ({ ...base, color: '#9ca3af', fontSize: '0.875rem' }),
+  singleValue: (base) => ({ ...base, color: '#0a0a0a', fontSize: '0.875rem' }),
+  input: (base) => ({ ...base, color: '#0a0a0a', fontSize: '0.875rem' }),
+  menu: (base) => ({
+    ...base,
+    borderRadius: '0.75rem',
+    border: '1px solid #e5e7eb',
+    boxShadow: '0 8px 24px -4px rgba(0,0,0,0.12)',
+    zIndex: 50,
+    overflow: 'hidden',
+  }),
+  option: (base, { isSelected, isFocused }) => ({
+    ...base,
+    fontSize: '0.875rem',
+    backgroundColor: isSelected ? '#019a51' : isFocused ? '#f9fafb' : '#fff',
+    color: isSelected ? '#fff' : '#0a0a0a',
+    cursor: 'pointer',
+    '&:active': { backgroundColor: '#017a41' },
+  }),
+  indicatorSeparator: () => ({ display: 'none' }),
+  dropdownIndicator: (base) => ({ ...base, color: '#9ca3af', paddingRight: '10px' }),
+};
 
 function CharCount({ value, min }: { value: string; min: number }) {
   const len = value?.length ?? 0;
@@ -44,9 +91,27 @@ function CharCount({ value, min }: { value: string; min: number }) {
   );
 }
 
-export default function BidForm({ jobId, budgetMin, budgetMax, onSuccess }: BidFormProps) {
+export default function BidForm({
+  jobId,
+  budgetMin,
+  budgetMax,
+  expectedDeliveryTime,
+  onSuccess,
+}: BidFormProps) {
   const [serverError, setServerError] = useState<string | null>(null);
-  const schema = useMemo(() => buildSchema(budgetMin, budgetMax), [budgetMin, budgetMax]);
+
+  const deliveryOptions = useMemo(
+    () => deliveryOptionsUpTo(expectedDeliveryTime),
+    [expectedDeliveryTime],
+  );
+  const allowedDeliveryValues = useMemo(
+    () => deliveryOptions.map((o) => o.value),
+    [deliveryOptions],
+  );
+  const schema = useMemo(
+    () => buildSchema(budgetMin, budgetMax, allowedDeliveryValues),
+    [budgetMin, budgetMax, allowedDeliveryValues],
+  );
 
   const {
     register,
@@ -89,30 +154,49 @@ export default function BidForm({ jobId, budgetMin, budgetMax, onSuccess }: BidF
       initial="hidden"
       animate="visible"
       onSubmit={handleSubmit(onSubmit)}
+      noValidate
       className="space-y-5"
     >
       {serverError && <Alert variant="error">{serverError}</Alert>}
 
-      {/* Pricing & timeline row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Input
-          label="Proposed Price ($)"
-          type="number"
-          placeholder={`e.g. ${budgetMin}`}
-          min={budgetMin}
-          max={budgetMax}
-          error={errors.proposed_price?.message}
-          hint={`Must be between $${budgetMin} and $${budgetMax}`}
-          {...register('proposed_price', { valueAsNumber: true })}
+      {/* Proposed price */}
+      <Input
+        label="Proposed Price ($)"
+        type="number"
+        placeholder={`e.g. ${budgetMin}`}
+        error={errors.proposed_price?.message}
+        hint={`Must be between $${budgetMin} and $${budgetMax}`}
+        {...register('proposed_price', { valueAsNumber: true })}
+      />
+
+      {/* Delivery time */}
+      <div>
+        <label htmlFor="estimated_delivery_time" className="block text-sm font-medium text-ink mb-1.5">
+          Delivery Time
+        </label>
+        <Controller
+          name="estimated_delivery_time"
+          control={control}
+          render={({ field }) => (
+            <ReactSelect<DeliveryOption, false>
+              inputId="estimated_delivery_time"
+              options={deliveryOptions}
+              value={deliveryOptions.find((o) => o.value === field.value) ?? null}
+              onChange={(opt) => field.onChange(opt?.value ?? '')}
+              onBlur={field.onBlur}
+              styles={deliverySelectStyles}
+              placeholder="Select delivery time"
+              isSearchable={false}
+              instanceId="bid-delivery-time"
+            />
+          )}
         />
-        <Input
-          label="Delivery Time"
-          placeholder="e.g. 3 business days"
-          maxLength={60}
-          error={errors.estimated_delivery_time?.message}
-          hint="How long will it take?"
-          {...register('estimated_delivery_time')}
-        />
+        <p className="text-xs text-muted mt-1">
+          Must not exceed the job&apos;s expected delivery: <span className="font-medium text-ink">{expectedDeliveryTime}</span>
+        </p>
+        {errors.estimated_delivery_time && (
+          <p className="text-xs text-red-500 mt-1">{errors.estimated_delivery_time.message}</p>
+        )}
       </div>
 
       {/* Cover letter */}

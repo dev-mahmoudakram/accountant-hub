@@ -336,6 +336,7 @@ export default function JobDetailContent({ jobId }: JobDetailProps) {
                       jobId={jobId}
                       budgetMin={job.budget_min}
                       budgetMax={job.budget_max}
+                      expectedDeliveryTime={job.expected_delivery_time}
                       onSuccess={() => setHasApplied(true)}
                     />
                   </div>
