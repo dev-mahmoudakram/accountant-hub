@@ -54,7 +54,7 @@ export default function BidReviewCard({ bid, jobOpen, onStatusChange }: Props) {
       {/* Cover letter preview / expand */}
       <div>
         <p className="text-xs font-medium text-muted mb-1.5">Cover Letter</p>
-        <p className={`text-sm text-ink leading-relaxed ${expanded ? '' : 'line-clamp-3'}`}>
+        <p className={`text-sm text-ink leading-relaxed wrap-break-word ${expanded ? '' : 'line-clamp-3'}`}>
           {bid.cover_letter}
         </p>
         {bid.cover_letter.length > 180 && (
@@ -71,7 +71,7 @@ export default function BidReviewCard({ bid, jobOpen, onStatusChange }: Props) {
       {expanded && (
         <div>
           <p className="text-xs font-medium text-muted mb-1.5">Experience Summary</p>
-          <p className="text-sm text-ink leading-relaxed">{bid.experience_summary}</p>
+          <p className="text-sm text-ink leading-relaxed wrap-break-word">{bid.experience_summary}</p>
         </div>
       )}
 

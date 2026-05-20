@@ -136,7 +136,7 @@ export default function JobDetailContent({ jobId }: JobDetailProps) {
                     </svg>
                     Job Description
                   </h2>
-                  <p className="text-sm text-muted leading-relaxed whitespace-pre-wrap">
+                  <p className="text-sm text-muted leading-relaxed whitespace-pre-wrap wrap-break-word">
                     {job.description}
                   </p>
                 </section>

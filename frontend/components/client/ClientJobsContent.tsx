@@ -14,6 +14,7 @@ import { JobCardSkeleton } from '@/components/ui/Skeleton';
 import EmptyState from '@/components/ui/EmptyState';
 import Pagination from '@/components/ui/Pagination';
 import Button from '@/components/ui/Button';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { staggerContainer, fadeUp } from '@/lib/animations';
 
 interface Meta {
@@ -29,8 +30,13 @@ export default function ClientJobsContent() {
   const [jobs, setJobs] = useState<JobListItem[] | null>(null);
   const [meta, setMeta] = useState<Meta>({ current_page: 1, last_page: 1, total: 0 });
   const [loading, setLoading] = useState(true);
+  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const page = Number(searchParams.get('page') ?? '1');
+  const pendingDeleteJob = pendingDeleteId !== null
+    ? jobs?.find((j) => j.id === pendingDeleteId) ?? null
+    : null;
 
   useEffect(() => {
     if (!isReady) return;
@@ -51,14 +57,23 @@ export default function ClientJobsContent() {
       .finally(() => setLoading(false));
   }, [isReady, isAuthenticated, user, page]);
 
-  async function handleDelete(id: number) {
-    if (!confirm('Are you sure you want to delete this job? This cannot be undone.')) return;
+  function handleDelete(id: number) {
+    setPendingDeleteId(id);
+  }
+
+  async function confirmDelete() {
+    if (pendingDeleteId === null) return;
+    setDeleting(true);
     try {
-      await api.delete(`/client/jobs/${id}`);
-      setJobs((prev) => prev?.filter((j) => j.id !== id) ?? null);
+      await api.delete(`/client/jobs/${pendingDeleteId}`);
+      setJobs((prev) => prev?.filter((j) => j.id !== pendingDeleteId) ?? null);
+      setMeta((prev) => ({ ...prev, total: Math.max(0, prev.total - 1) }));
       toast.success('Job deleted.');
+      setPendingDeleteId(null);
     } catch {
       toast.error('Failed to delete job.');
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -140,6 +155,22 @@ export default function ClientJobsContent() {
           )}
         </>
       )}
+
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        variant="danger"
+        title="Delete this job?"
+        description={
+          pendingDeleteJob
+            ? `"${pendingDeleteJob.title}" and all its bids will be permanently removed. This cannot be undone.`
+            : 'This cannot be undone.'
+        }
+        confirmLabel="Delete job"
+        cancelLabel="Cancel"
+        loading={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => { if (!deleting) setPendingDeleteId(null); }}
+      />
     </div>
   );
 }
